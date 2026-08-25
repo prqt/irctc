@@ -1,43 +1,769 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <title>IRCTC</title>
-    <link rel="stylesheet" href="src/styles.css" />
-  </head>
-  <body>
-    <main class="page-shell">
-      <header class="notch" aria-label="IRCTC header notch">
-        <img
-          src="https://www.irctc.co.in/eticket/assets-new/header.svg"
-          alt="IRCTC and Indian Railways logos"
-          class="notch-logo"
-        />
-      </header>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRCTC — Next Gen Rail Experience</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
 
-      <section class="hero-grid" aria-label="Initial IRCTC booking layout">
-        <div class="train-face" aria-hidden="true">
-          <div class="train-window-row">
-            <span></span><span></span><span></span><span></span>
+  <!-- Top Full-Span Notch Header -->
+  <header class="notch-header">
+    <div class="notch-bar">
+      <!-- Left: Enlarged IRCTC Dual Logo -->
+      <div class="notch-left">
+        <a href="#" class="logo-link" id="nav-home-btn">
+          <img 
+            src="https://www.irctc.co.in/eticket/assets-new/header.svg" 
+            alt="IRCTC & Indian Railways" 
+            class="irctc-dual-logo"
+            onerror="this.parentElement.classList.add('logo-fallback-active')"
+          />
+          <div class="logo-fallback">
+            <span class="logo-badge">IRCTC</span>
+            <span class="logo-divider"></span>
+            <span class="logo-badge secondary">INDIAN RAILWAYS</span>
           </div>
-          <div class="seat-grid">
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span>
+        </a>
+      </div>
+
+      <!-- Right: User Auth Action -->
+      <div class="notch-right" id="notch-auth-container">
+        <button class="btn-login" id="open-auth-btn">LOGIN</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Toast for OTP & Alerts -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Fake Buffering / Server Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="loading-box">
+      <div class="loading-spinner-ring"></div>
+      <div class="loading-title" id="loading-title">Connecting to CRIS Server...</div>
+      <div class="loading-sub" id="loading-sub">Fetching real-time train schedule &amp; seat availability</div>
+      <div class="loading-progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Booking App Container -->
+  <main class="booking-app-container">
+
+    <!-- Progress Stepper -->
+    <div class="booking-stepper" id="booking-stepper">
+      <div class="stepper-step active" data-step="search">
+        <span class="step-num">1</span>
+        <span class="step-label">Search</span>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-step" data-step="trains">
+        <span class="step-num">2</span>
+        <span class="step-label">Trains</span>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-step" data-step="passengers">
+        <span class="step-num">3</span>
+        <span class="step-label">Passengers</span>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-step" data-step="review">
+        <span class="step-num">4</span>
+        <span class="step-label">Review &amp; Verify</span>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-step" data-step="payment">
+        <span class="step-num">5</span>
+        <span class="step-label">Payment</span>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-step" data-step="ticket">
+        <span class="step-num">6</span>
+        <span class="step-label">Ticket</span>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 1: SEARCH ================= -->
+    <section class="booking-view active" id="view-search">
+      <div class="booking-card main-search-card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Book Train Ticket</h2>
+            <p class="card-subtitle">Indian Railways Passenger Reservation System</p>
+          </div>
+          <span class="card-tag">CRIS CONNECTED</span>
+        </div>
+
+        <form id="train-search-form">
+          <!-- Station Selection Row with Centered Swap Button -->
+          <div class="station-search-row">
+            <div class="input-block flex-1">
+              <label for="search-from">From Station *</label>
+              <div class="station-input-wrap">
+                <input type="text" id="search-from" placeholder="Enter station name or code" required list="stations-list" value="NDLS - New Delhi (Delhi)">
+              </div>
+            </div>
+
+            <!-- Centered Swap Button -->
+            <div class="swap-button-col">
+              <button type="button" class="btn-swap-stations" id="btn-swap" title="Swap Stations">&#x21c4;</button>
+            </div>
+
+            <div class="input-block flex-1">
+              <label for="search-to">To Station *</label>
+              <div class="station-input-wrap">
+                <input type="text" id="search-to" placeholder="Enter station name or code" required list="stations-list" value="MMCT - Mumbai Central (Maharashtra)">
+              </div>
+            </div>
+          </div>
+
+          <datalist id="stations-list">
+            <!-- Populated from stations.js -->
+          </datalist>
+
+          <!-- Second Search Row: Date, Class, Quota -->
+          <div class="search-filters-row">
+            <div class="input-block">
+              <label for="search-date">Journey Date *</label>
+              <input type="date" id="search-date" required>
+            </div>
+
+            <div class="input-block">
+              <label for="search-class">Class</label>
+              <select id="search-class">
+                <option value="ALL">All Classes</option>
+                <option value="1A">AC First Class (1A)</option>
+                <option value="2A">AC 2 Tier (2A)</option>
+                <option value="3A">AC 3 Tier (3A)</option>
+                <option value="EC">Exec Chair Car (EC)</option>
+                <option value="CC">AC Chair Car (CC)</option>
+                <option value="SL">Sleeper Class (SL)</option>
+              </select>
+            </div>
+
+            <div class="input-block">
+              <label for="search-quota">Quota</label>
+              <select id="search-quota">
+                <option value="GENERAL">GENERAL</option>
+                <option value="TATKAL">TATKAL</option>
+                <option value="LADIES">LADIES</option>
+                <option value="SR_CITIZEN">LOWER BERTH / SR. CITIZEN</option>
+                <option value="DIVYANGJAN">DIVYANGJAN</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="search-action-block">
+            <button type="submit" class="btn-primary-action" id="btn-search-trains">
+              SEARCH TRAINS &rarr;
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: TRAIN SELECTION ================= -->
+    <section class="booking-view" id="view-trains" style="display: none;">
+      <div class="view-header-bar">
+        <button type="button" class="btn-back-link" id="back-to-search">&larr; Modify Search</button>
+        <div class="search-summary-pill" id="search-summary-text">
+          NDLS &rarr; MMCT | 25 Aug 2026 | General Quota
+        </div>
+      </div>
+
+      <div class="trains-list" id="trains-list-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: PASSENGER DETAILS ================= -->
+    <section class="booking-view" id="view-passengers" style="display: none;">
+      <div class="view-header-bar">
+        <button type="button" class="btn-back-link" id="back-to-trains">&larr; Change Train</button>
+        <div class="selected-train-pill" id="passenger-train-pill">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="booking-card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">Passenger Details</h2>
+            <p class="card-subtitle">Auto-filled from your logged in IRCTC profile</p>
           </div>
         </div>
 
-        <article class="booking-card">
-          <p class="eyebrow">IRCTC</p>
-          <h1>Book Tickets</h1>
-          <p class="setup-note">Apple-inspired dark booking workspace, ready for Supabase authentication and database wiring.</p>
-        </article>
-      </section>
-    </main>
-  </body>
+        <form id="passenger-form">
+          <div id="passengers-inputs-container">
+            <!-- Dynamic Passenger Cards inserted here -->
+          </div>
+
+          <div class="passenger-add-actions">
+            <button type="button" class="btn-secondary-action" id="add-passenger-btn">+ Add Another Passenger</button>
+          </div>
+
+          <!-- Contact info for ticket -->
+          <div class="contact-details-box">
+            <h3 class="section-micro-heading">Ticket Delivery &amp; SMS Details</h3>
+            <div class="form-row">
+              <div class="input-block">
+                <label for="booking-contact-email">Email Address *</label>
+                <input type="email" id="booking-contact-email" placeholder="e-Ticket sent here" required>
+              </div>
+              <div class="input-block">
+                <label for="booking-contact-mobile">Mobile Number *</label>
+                <input type="tel" id="booking-contact-mobile" placeholder="10-digit mobile" pattern="[0-9]{10}" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions space-between">
+            <button type="button" class="btn-nav-prev" id="btn-passengers-back">&larr; Back</button>
+            <button type="submit" class="btn-primary-action">Continue to Review &rarr;</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 4: REVIEW & HUMAN VERIFICATION (PAPER BILL + SWIPE TO TEAR) ================= -->
+    <section class="booking-view" id="view-review" style="display: none;">
+      <div class="view-header-bar">
+        <button type="button" class="btn-back-link" id="back-to-passengers">&larr; Edit Passengers</button>
+      </div>
+
+      <div class="review-layout-grid">
+        <!-- LEFT: Realistic Paper Bill Receipt -->
+        <div class="paper-bill-wrapper">
+          <div class="paper-bill" id="paper-bill-element">
+            <div class="bill-perforation top"></div>
+
+            <div class="bill-header">
+              <div class="bill-brand">IRCTC RAIL RECEIPT</div>
+              <div class="bill-meta" id="bill-date-time">TAX INVOICE / BOOKING MANIFEST</div>
+            </div>
+
+            <div class="bill-divider-dashed"></div>
+
+            <div class="bill-section" id="bill-journey-info">
+              <!-- Journey details -->
+            </div>
+
+            <div class="bill-divider-dashed"></div>
+
+            <div class="bill-section">
+              <div class="bill-row-title">PASSENGER MANIFEST</div>
+              <div class="bill-passengers-table" id="bill-passengers-list">
+                <!-- Passenger rows -->
+              </div>
+            </div>
+
+            <div class="bill-divider-dashed"></div>
+
+            <!-- Fare Breakdown -->
+            <div class="bill-section bill-fare-breakdown" id="bill-fare-breakdown">
+              <!-- Breakdown -->
+            </div>
+
+            <div class="bill-divider-double"></div>
+
+            <div class="bill-total-row" id="bill-total-row">
+              <!-- Total -->
+            </div>
+
+            <div class="bill-perforation bottom"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: SWIPE-TO-TEAR HUMAN VERIFICATION GATE -->
+        <div class="human-verify-container">
+          <div class="verify-card-box">
+            <div class="verify-head">
+              <span class="verify-badge">SECURITY CHECK</span>
+              <h3 class="verify-title">Swipe to Tear &amp; Verify</h3>
+              <p class="verify-instruction">Drag your cursor downwards across the dotted line to tear the pass and unlock payment.</p>
+            </div>
+
+            <!-- The Tearable Interactive Pass -->
+            <div class="tearable-pass-box" id="tearable-pass-box">
+              <div class="pass-main-side">
+                <div class="pass-tag">IRCTC GATE PASS</div>
+                <div class="pass-code" id="pass-temp-pnr">BOOKING MANIFEST</div>
+                <div class="pass-route" id="pass-route-text">NDLS &rarr; MMCT</div>
+                
+                <!-- Unlocked badge that appears upon tear -->
+                <div class="tear-success-stamp" id="tear-success-stamp">
+                  <div class="stamp-check-icon">&#x2714;</div>
+                  <div class="stamp-verified-text">HUMAN VERIFIED</div>
+                  <div class="stamp-gate-text">GATE UNLOCKED</div>
+                </div>
+              </div>
+
+              <!-- Tear Line & Interactive Swipe Track -->
+              <div class="pass-tear-track" id="pass-tear-track">
+                <div class="tear-dotted-visual"></div>
+                <div class="tear-slider-thumb" id="tear-slider-thumb" title="Click and drag down to tear">
+                  <span class="scissor-glyph">&#x2702;</span>
+                  <div class="tear-arrow-pulse">&#x2193;</div>
+                </div>
+              </div>
+
+              <!-- Right Tearable Drop Stub -->
+              <div class="pass-stub-side" id="pass-stub-side">
+                <div class="stub-micro-barcodes"></div>
+                <span class="stub-serial">CRIS-2026</span>
+              </div>
+            </div>
+
+            <div class="verify-actions">
+              <button type="button" class="btn-primary-action full-width" id="btn-proceed-to-payment" disabled>
+                LOCKED &mdash; SWIPE TO UNLOCK
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 5: PAYMENT ================= -->
+    <section class="booking-view" id="view-payment" style="display: none;">
+      <div class="view-header-bar">
+        <button type="button" class="btn-back-link" id="back-to-review">&larr; Back to Review</button>
+        <div class="payment-amount-badge" id="payment-amount-display">Amount to Pay: ₹0</div>
+      </div>
+
+      <div class="booking-card payment-card">
+        <div class="payment-tabs">
+          <button class="pay-tab active" data-paymethod="upi">UPI / QR</button>
+          <button class="pay-tab" data-paymethod="card">Debit / Credit Card</button>
+          <button class="pay-tab" data-paymethod="netbanking">Net Banking</button>
+          <button class="pay-tab" data-paymethod="wallets">IRCTC iMudra / Wallets</button>
+        </div>
+
+        <form id="payment-form">
+          <!-- UPI Method -->
+          <div class="pay-method-panel active" id="panel-upi">
+            <div class="upi-box">
+              <label for="upi-id-input">Enter Virtual Payment Address (UPI ID) *</label>
+              <div class="upi-input-row">
+                <input type="text" id="upi-id-input" placeholder="e.g. mobile@upi / username@okhdfcbank" required>
+                <button type="button" class="btn-verify-upi" id="btn-verify-upi">Verify</button>
+              </div>
+              <div class="upi-apps-icons">
+                <span class="upi-chip">GPay</span>
+                <span class="upi-chip">PhonePe</span>
+                <span class="upi-chip">Paytm</span>
+                <span class="upi-chip">BHIM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Method -->
+          <div class="pay-method-panel" id="panel-card" style="display: none;">
+            <div class="form-group">
+              <label for="card-num">Card Number *</label>
+              <input type="text" id="card-num" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="card-exp">Expiry Date (MM/YY) *</label>
+                <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5">
+              </div>
+              <div class="form-group">
+                <label for="card-cvv">CVV / CVC *</label>
+                <input type="password" id="card-cvv" placeholder="3 Digits" maxlength="3">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="card-name">Cardholder Name *</label>
+              <input type="text" id="card-name" placeholder="Name on Card">
+            </div>
+          </div>
+
+          <!-- Net Banking Method -->
+          <div class="pay-method-panel" id="panel-netbanking" style="display: none;">
+            <div class="form-group">
+              <label for="netbanking-bank">Select Bank *</label>
+              <select id="netbanking-bank">
+                <option value="SBI">State Bank of India (SBI)</option>
+                <option value="HDFC">HDFC Bank</option>
+                <option value="ICICI">ICICI Bank</option>
+                <option value="AXIS">Axis Bank</option>
+                <option value="PNB">Punjab National Bank</option>
+                <option value="KOTAK">Kotak Mahindra Bank</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Wallets Method -->
+          <div class="pay-method-panel" id="panel-wallets" style="display: none;">
+            <div class="form-group">
+              <label for="wallet-select">Select Wallet *</label>
+              <select id="wallet-select">
+                <option value="IMUDRA">IRCTC iMudra Wallet</option>
+                <option value="PAYTM">Paytm Wallet</option>
+                <option value="MOBIKWIK">MobiKwik</option>
+                <option value="AMAZON">Amazon Pay</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="payment-action-block">
+            <button type="submit" class="btn-primary-action" id="pay-submit-btn">
+              PAY &amp; CONFIRM BOOKING &rarr;
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 6: CONFIRMED TICKET (WITH PNR & PDF DOWNLOAD) ================= -->
+    <section class="booking-view" id="view-ticket" style="display: none;">
+      <div class="ticket-view-wrapper">
+        
+        <!-- Ticket Success Ribbon -->
+        <div class="ticket-status-badge">
+          <span class="status-icon">&#x2713;</span>
+          <span class="status-title">BOOKING CONFIRMED &amp; TICKET ISSUED</span>
+        </div>
+
+        <!-- The Final Confirmed Ticket Container -->
+        <div class="master-ticket-container" id="printable-ticket">
+          
+          <div class="ticket-main-body" id="ticket-main-body">
+            <!-- Ticket Top Header -->
+            <div class="ticket-head">
+              <div class="ticket-rail-brand">
+                <div class="irctc-logo-micro">IRCTC</div>
+                <div class="rail-brand-sub">INDIAN RAILWAYS E-TICKETING</div>
+              </div>
+              <div class="pnr-badge-box">
+                <span class="pnr-title">PNR NUMBER</span>
+                <div class="pnr-code-wrap">
+                  <span class="pnr-number" id="ticket-pnr-display">248-9104823</span>
+                  <button type="button" class="btn-copy-pnr" id="btn-copy-pnr" title="Copy PNR to Clipboard">COPY</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Route & Train Bar -->
+            <div class="ticket-route-grid" id="ticket-route-info">
+              <!-- Inserted dynamically -->
+            </div>
+
+            <!-- Passenger Details Table on Ticket -->
+            <div class="ticket-passengers-section">
+              <div class="ticket-section-title">PASSENGER DETAILS &amp; SEAT ASSIGNMENT</div>
+              <table class="ticket-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>PASSENGER NAME</th>
+                    <th>AGE / GENDER</th>
+                    <th>COACH &amp; SEAT / BERTH</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="ticket-passengers-tbody">
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- QR & Transaction Details -->
+            <div class="ticket-footer-grid">
+              <div class="ticket-qr-block">
+                <div class="qr-canvas-mock" id="ticket-qr-canvas"></div>
+                <div class="qr-label">DIGITAL VERIFICATION QR</div>
+              </div>
+              <div class="ticket-audit-meta">
+                <div><strong>Transaction ID:</strong> <span id="ticket-txn-id">IRCTC98172401</span></div>
+                <div><strong>Quota:</strong> <span id="ticket-quota-display">GENERAL</span></div>
+                <div><strong>Class:</strong> <span id="ticket-class-display">3A (AC 3 TIER)</span></div>
+                <div><strong>Total Fare Paid:</strong> <span id="ticket-fare-display">₹1,850.00</span></div>
+              </div>
+            </div>
+
+            <!-- Verified Stamp on Confirmed Ticket -->
+            <div class="confirmed-watermark-stamp">
+              <div class="watermark-inner">
+                <span class="watermark-check">&#x2714;</span>
+                <span>CONFIRMED / CNF</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Post-Booking Action Bar -->
+        <div class="ticket-post-actions">
+          <button type="button" class="btn-primary-action" id="btn-download-pdf">
+            &#x21E9; DOWNLOAD TICKET (PDF / PRINT)
+          </button>
+          <button type="button" class="btn-secondary-action" id="btn-book-another">
+            Book Another Ticket
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= AUTH MODAL ================= -->
+  <div class="modal-overlay" id="auth-modal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-tabs">
+          <button class="tab-btn active" id="tab-login-btn">LOGIN</button>
+          <button class="tab-btn" id="tab-register-btn">REGISTER</button>
+        </div>
+        <button class="modal-close-btn" id="close-modal-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Status / Alert Message -->
+        <div class="auth-alert" id="auth-alert" style="display: none;"></div>
+
+        <!-- ================= LOGIN FORM ================= -->
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-username">User ID / Username *</label>
+            <input type="text" id="login-username" placeholder="Enter User ID" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password *</label>
+            <input type="password" id="login-password" placeholder="Enter Password" required autocomplete="current-password">
+          </div>
+
+          <!-- Captcha Box -->
+          <div class="form-group captcha-group">
+            <label for="login-captcha-input">Security Captcha *</label>
+            <div class="captcha-row">
+              <div class="captcha-display" id="login-captcha-display" title="Click to refresh">
+                <canvas id="login-captcha-canvas" width="140" height="42"></canvas>
+              </div>
+              <button type="button" class="btn-refresh-captcha" id="refresh-login-captcha" title="New Captcha">&#x21bb;</button>
+            </div>
+            <input type="text" id="login-captcha-input" placeholder="Enter Captcha Code" required autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn-submit" id="login-submit-btn">SIGN IN</button>
+          
+          <div class="form-footer">
+            <p>New to IRCTC? <a href="#" id="switch-to-register">Register an account</a></p>
+          </div>
+        </form>
+
+        <!-- ================= REGISTRATION FORM ================= -->
+        <form id="register-form" class="auth-form" style="display: none;">
+          
+          <!-- Step Indicators -->
+          <div class="register-steps">
+            <div class="step-indicator active" data-step="1">1. Account</div>
+            <div class="step-indicator" data-step="2">2. Personal</div>
+            <div class="step-indicator" data-step="3">3. Contact &amp; Address</div>
+            <div class="step-indicator" data-step="4">4. Verification</div>
+          </div>
+
+          <!-- STEP 1: Account Details -->
+          <div class="register-step-pane active" id="reg-step-1">
+            <h3 class="step-heading">Account Details</h3>
+            
+            <div class="form-group">
+              <label for="reg-username">User ID / Username *</label>
+              <input type="text" id="reg-username" placeholder="3 to 35 characters" required minlength="3">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-password">Password * (Min 8 chars, 1 Upper, 1 Number, 1 Special)</label>
+                <input type="password" id="reg-password" placeholder="e.g. Secret@123" required minlength="8">
+              </div>
+              <div class="form-group">
+                <label for="reg-confirm-password">Confirm Password *</label>
+                <input type="password" id="reg-confirm-password" placeholder="Re-enter password" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-language">Preferred Language *</label>
+              <select id="reg-language" required>
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-next" data-next="2">Next: Personal Details &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 2: Personal Details -->
+          <div class="register-step-pane" id="reg-step-2" style="display: none;">
+            <h3 class="step-heading">Personal Details</h3>
+
+            <div class="form-row three-col">
+              <div class="form-group">
+                <label for="reg-fname">First Name *</label>
+                <input type="text" id="reg-fname" placeholder="First Name" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-mname">Middle Name</label>
+                <input type="text" id="reg-mname" placeholder="Middle Name">
+              </div>
+              <div class="form-group">
+                <label for="reg-lname">Last Name *</label>
+                <input type="text" id="reg-lname" placeholder="Last Name" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-gender">Gender *</label>
+                <select id="reg-gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Transgender">Transgender</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="reg-dob">Date of Birth *</label>
+                <input type="date" id="reg-dob" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-occupation">Occupation *</label>
+                <select id="reg-occupation" required>
+                  <option value="">Select Occupation</option>
+                  <option value="Government">Government</option>
+                  <option value="Public">Public</option>
+                  <option value="Private">Private</option>
+                  <option value="Professional">Professional</option>
+                  <option value="Self Employed">Self Employed</option>
+                  <option value="Student">Student</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="reg-marital">Marital Status *</label>
+                <select id="reg-marital" required>
+                  <option value="">Select Marital Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions space-between">
+              <button type="button" class="btn-prev" data-prev="1">&larr; Back</button>
+              <button type="button" class="btn-next" data-next="3">Next: Contact Details &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Contact & Address Details -->
+          <div class="register-step-pane" id="reg-step-3" style="display: none;">
+            <h3 class="step-heading">Contact &amp; Address Details</h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-email">Email Address *</label>
+                <input type="email" id="reg-email" placeholder="name@domain.com" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-mobile">Mobile Number *</label>
+                <input type="tel" id="reg-mobile" placeholder="10-digit mobile" pattern="[0-9]{10}" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-door">Flat / Door / House No. *</label>
+              <input type="text" id="reg-door" placeholder="Flat / Door / House No." required>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-street">Street / Area Name *</label>
+              <input type="text" id="reg-street" placeholder="Street / Area Name" required>
+            </div>
+
+            <div class="form-row three-col">
+              <div class="form-group">
+                <label for="reg-city">City / Town *</label>
+                <input type="text" id="reg-city" placeholder="City" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-state">State *</label>
+                <input type="text" id="reg-state" placeholder="State" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-pincode">PIN Code *</label>
+                <input type="text" id="reg-pincode" placeholder="6-digit PIN" pattern="[0-9]{6}" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-country">Country *</label>
+              <input type="text" id="reg-country" value="India" readonly>
+            </div>
+
+            <div class="form-actions space-between">
+              <button type="button" class="btn-prev" data-prev="2">&larr; Back</button>
+              <button type="button" class="btn-next" data-next="4">Next: Verification &rarr;</button>
+            </div>
+          </div>
+
+          <!-- STEP 4: Security Verification & OTP -->
+          <div class="register-step-pane" id="reg-step-4" style="display: none;">
+            <h3 class="step-heading">Security Verification</h3>
+
+            <!-- Registration Captcha -->
+            <div class="form-group captcha-group">
+              <label for="reg-captcha-input">Security Captcha *</label>
+              <div class="captcha-row">
+                <div class="captcha-display" id="reg-captcha-display" title="Click to refresh">
+                  <canvas id="reg-captcha-canvas" width="140" height="42"></canvas>
+                </div>
+                <button type="button" class="btn-refresh-captcha" id="refresh-reg-captcha" title="New Captcha">&#x21bb;</button>
+              </div>
+              <input type="text" id="reg-captcha-input" placeholder="Enter Captcha Code" required autocomplete="off">
+            </div>
+
+            <!-- OTP Verification -->
+            <div class="otp-verification-box">
+              <div class="otp-header">
+                <label for="reg-otp-input">Mobile &amp; Email Verification OTP *</label>
+                <button type="button" class="btn-send-otp" id="send-otp-btn">Send OTP</button>
+              </div>
+              <div class="otp-input-wrap">
+                <input type="text" id="reg-otp-input" placeholder="Enter 6-digit OTP" maxlength="6" autocomplete="one-time-code">
+              </div>
+              <div class="otp-help-text" id="otp-help-text">Click "Send OTP" to receive verification code on your mobile/email.</div>
+            </div>
+
+            <div class="form-actions space-between">
+              <button type="button" class="btn-prev" data-prev="3">&larr; Back</button>
+              <button type="submit" class="btn-submit" id="reg-submit-btn">COMPLETE REGISTRATION</button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/supabase.js"></script>
+  <script type="module" src="js/stations.js"></script>
+  <script type="module" src="js/booking.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
 </html>
