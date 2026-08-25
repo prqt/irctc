@@ -533,8 +533,7 @@ function updateNotchAuthState() {
     document.getElementById('logout-btn')?.addEventListener('click', () => {
       currentUser = null;
       localStorage.removeItem('irctc_active_session');
-      updateNotchAuthState();
-      showToast('Logged out successfully.');
+      window.location.reload();
     });
   } else {
     container.innerHTML = `

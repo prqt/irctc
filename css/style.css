@@ -1864,11 +1864,737 @@ body {
 }
 
 /* ==========================================================================
+   TOP PROGRESS BAR (BROWSER-STYLE THIN GREY/CHARCOAL)
+   ========================================================================== */
+.top-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  background: transparent;
+  z-index: 100000;
+  pointer-events: none;
+}
+
+.top-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #94a3b8;
+  box-shadow: 0 0 10px rgba(148, 163, 184, 0.7);
+  transition: width 0.3s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+
+.top-progress-fill.active {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   HEADER NOTCH NAVIGATION TABS
+   ========================================================================== */
+.notch-center-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.notch-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.5px;
+}
+
+.notch-nav-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notch-nav-btn.active {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   SEARCH CARD TABS
+   ========================================================================== */
+.card-head.with-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-nav-tabs {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.card-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.card-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.card-tab-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   CUSTOM STATION PICKER & DROPDOWN
+   ========================================================================== */
+.station-picker-box {
+  position: relative;
+}
+
+.station-input-wrap,
+.date-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.station-input-wrap input,
+.date-input-wrap input {
+  padding-left: 36px !important;
+  padding-right: 32px !important;
+  width: 100%;
+}
+
+.btn-clear-input {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.btn-clear-input:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.station-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #0f0f14;
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+  padding: 4px;
+}
+
+.station-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  gap: 10px;
+}
+
+.station-dropdown-item:hover,
+.station-dropdown-item.highlighted {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stn-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stn-code-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.stn-name-text {
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.stn-state-tag {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stn-no-results {
+  padding: 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   CUSTOM DATE CHOOSER & CALENDAR POPUP
+   ========================================================================== */
+.date-picker-box {
+  position: relative;
+}
+
+.date-input-wrap {
+  cursor: pointer;
+}
+
+.calendar-dropdown-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 310px;
+  background: #0f0f14;
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  z-index: 1000;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85);
+  padding: 14px;
+}
+
+.cal-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cal-month-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.cal-nav-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.cal-nav-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cal-quick-chips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.cal-chip {
+  padding: 4px 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.cal-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.cal-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.cal-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #ffffff;
+  border: 1px solid transparent;
+  transition: var(--transition);
+}
+
+.cal-day-cell:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cal-day-cell.today {
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+}
+
+.cal-day-cell.selected {
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 900;
+}
+
+.cal-day-cell.disabled {
+  color: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   TRAIN CARD SELECTION & CHECK AVAILABILITY BUTTON
+   ========================================================================== */
+.class-fare-box.selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.class-fare-box.selected .btn-book-class {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
+}
+
+.train-bottom-action {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+
+.btn-check-avail {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+  transition: var(--transition);
+}
+
+.btn-check-avail:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   PNR SEARCH & RESULTS VIEW
+   ========================================================================== */
+.pnr-search-form {
+  margin-top: 10px;
+}
+
+.pnr-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pnr-hash-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.pnr-input-wrapper input {
+  padding-left: 36px !important;
+  padding-right: 140px !important;
+  letter-spacing: 2px;
+  font-size: 15px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  width: 100%;
+}
+
+.btn-pnr-submit {
+  position: absolute;
+  right: 6px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-pnr-submit:hover {
+  background: #e2e8f0;
+}
+
+.quick-pnr-box {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-pnr-title {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.quick-pnr-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip-pnr-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chip-pnr-btn strong {
+  color: #ffffff;
+  font-family: var(--font-mono);
+}
+
+.chip-pnr-btn:hover {
+  border-color: var(--border-medium);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* PNR Result Display Card */
+.pnr-result-section {
+  margin-top: 24px;
+}
+
+.pnr-status-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+}
+
+.pnr-card-banner {
+  background: linear-gradient(135deg, #18181b, #09090b);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.pnr-train-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pnr-num-tag {
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.pnr-train-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.pnr-train-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.pnr-chart-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.pnr-chart-badge.prepared {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+.pnr-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pnr-meta-item .pnr-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.pnr-meta-item .pnr-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 3px;
+}
+
+.pnr-pax-section {
+  padding: 20px;
+}
+
+.pnr-section-heading {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.pnr-table-wrap {
+  overflow-x: auto;
+}
+
+.pnr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.pnr-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  font-weight: 800;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pnr-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: #ffffff;
+}
+
+.pnr-status-pill {
+  display: inline-block;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.pnr-footer-row {
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pnr-fare-total {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pnr-fare-total strong {
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.pnr-actions-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-pnr-action {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border-medium);
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-pnr-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-pnr-action.primary {
+  background: #ffffff;
+  color: #000000;
+  border: none;
+}
+
+.btn-pnr-action.primary:hover {
+  background: #e2e8f0;
+}
+
+.pnr-not-found-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.pnr-not-found-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.pnr-not-found-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.pnr-not-found-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
    PRINT MEDIA STYLES
    ========================================================================== */
 @media print {
   body { background: #ffffff !important; color: #000000 !important; }
-  .notch-header, .booking-stepper, .ticket-status-badge, .ticket-post-actions, .toast-container, .btn-copy-pnr, .loading-overlay {
+  .notch-header, .booking-stepper, .ticket-status-badge, .ticket-post-actions, .toast-container, .btn-copy-pnr, .top-progress-bar {
     display: none !important;
   }
   .booking-app-container { padding: 0 !important; max-width: 100% !important; }
@@ -1890,6 +2616,7 @@ body {
    ========================================================================== */
 @media (max-width: 768px) {
   .notch-bar { height: 60px; padding: 0 14px; }
+  .notch-center-nav { display: none; }
   .irctc-dual-logo { height: 30px; }
   .station-search-row { flex-direction: column; }
   .swap-button-col { padding-top: 0; }
@@ -1898,4 +2625,5 @@ body {
   .form-row, .form-row.three-col { grid-template-columns: 1fr; }
   .ticket-route-grid { grid-template-columns: 1fr; gap: 10px; text-align: center; }
   .ticket-route-col.right-align { text-align: center; }
+  .calendar-dropdown-popup { width: 100%; max-width: 320px; }
 }

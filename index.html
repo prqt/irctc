@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,13 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
+
+  <!-- Top Browser-Style Thin Progress Bar (Grey/Charcoal) -->
+  <div id="top-progress-bar" class="top-progress-bar">
+    <div class="top-progress-fill" id="top-progress-fill"></div>
+  </div>
 
   <!-- Top Full-Span Notch Header -->
   <header class="notch-header">
@@ -16,12 +23,8 @@
       <!-- Left: Enlarged IRCTC Dual Logo -->
       <div class="notch-left">
         <a href="#" class="logo-link" id="nav-home-btn">
-          <img 
-            src="https://www.irctc.co.in/eticket/assets-new/header.svg" 
-            alt="IRCTC & Indian Railways" 
-            class="irctc-dual-logo"
-            onerror="this.parentElement.classList.add('logo-fallback-active')"
-          />
+          <img src="https://www.irctc.co.in/eticket/assets-new/header.svg" alt="IRCTC & Indian Railways"
+            class="irctc-dual-logo" onerror="this.parentElement.classList.add('logo-fallback-active')" />
           <div class="logo-fallback">
             <span class="logo-badge">IRCTC</span>
             <span class="logo-divider"></span>
@@ -37,25 +40,13 @@
     </div>
   </header>
 
-  <!-- Notification Toast for OTP & Alerts -->
+  <!-- Notification Toast for Alerts -->
   <div class="toast-container" id="toast-container"></div>
-
-  <!-- Fake Buffering / Server Loading Overlay -->
-  <div class="loading-overlay" id="loading-overlay" style="display: none;">
-    <div class="loading-box">
-      <div class="loading-spinner-ring"></div>
-      <div class="loading-title" id="loading-title">Connecting to CRIS Server...</div>
-      <div class="loading-sub" id="loading-sub">Fetching real-time train schedule &amp; seat availability</div>
-      <div class="loading-progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- Main Booking App Container -->
   <main class="booking-app-container">
 
-    <!-- Progress Stepper -->
+    <!-- Progress Stepper (Visible for booking steps) -->
     <div class="booking-stepper" id="booking-stepper">
       <div class="stepper-step active" data-step="search">
         <span class="step-num">1</span>
@@ -91,10 +82,16 @@
     <!-- ================= VIEW 1: SEARCH ================= -->
     <section class="booking-view active" id="view-search">
       <div class="booking-card main-search-card">
-        <div class="card-head">
-          <div>
-            <h2 class="card-title">Book Train Ticket</h2>
-            <p class="card-subtitle">Indian Railways Passenger Reservation System</p>
+
+        <!-- Search Card Header Tabs (Search Trains & PNR Status) -->
+        <div class="card-head with-tabs">
+          <div class="card-nav-tabs">
+            <button type="button" class="card-tab-btn active" id="tab-mode-search">
+              <span>🚆</span> Search Trains
+            </button>
+            <button type="button" class="card-tab-btn" id="tab-mode-pnr">
+              <span>🎫</span> PNR Status
+            </button>
           </div>
           <span class="card-tag">CRIS CONNECTED</span>
         </div>
@@ -102,11 +99,19 @@
         <form id="train-search-form">
           <!-- Station Selection Row with Centered Swap Button -->
           <div class="station-search-row">
-            <div class="input-block flex-1">
+
+            <!-- From Station Input Container with Custom Dropdown -->
+            <div class="input-block flex-1 station-picker-box">
               <label for="search-from">From Station *</label>
               <div class="station-input-wrap">
-                <input type="text" id="search-from" placeholder="Enter station name or code" required list="stations-list" value="NDLS - New Delhi (Delhi)">
+                <span class="input-prefix-icon">📍</span>
+                <input type="text" id="search-from" placeholder="Enter station name or code" required autocomplete="off"
+                  value="">
+                <button type="button" class="btn-clear-input" id="btn-clear-from" style="display: none;"
+                  title="Clear">&times;</button>
               </div>
+              <!-- Floating Custom Station Dropdown -->
+              <div class="station-dropdown-menu" id="dropdown-from" style="display: none;"></div>
             </div>
 
             <!-- Centered Swap Button -->
@@ -114,23 +119,34 @@
               <button type="button" class="btn-swap-stations" id="btn-swap" title="Swap Stations">&#x21c4;</button>
             </div>
 
-            <div class="input-block flex-1">
+            <!-- To Station Input Container with Custom Dropdown -->
+            <div class="input-block flex-1 station-picker-box">
               <label for="search-to">To Station *</label>
               <div class="station-input-wrap">
-                <input type="text" id="search-to" placeholder="Enter station name or code" required list="stations-list" value="MMCT - Mumbai Central (Maharashtra)">
+                <span class="input-prefix-icon">🏁</span>
+                <input type="text" id="search-to" placeholder="Enter station name or code" required autocomplete="off"
+                  value="">
+                <button type="button" class="btn-clear-input" id="btn-clear-to" style="display: none;"
+                  title="Clear">&times;</button>
               </div>
+              <!-- Floating Custom Station Dropdown -->
+              <div class="station-dropdown-menu" id="dropdown-to" style="display: none;"></div>
             </div>
           </div>
 
-          <datalist id="stations-list">
-            <!-- Populated from stations.js -->
-          </datalist>
-
-          <!-- Second Search Row: Date, Class, Quota -->
+          <!-- Second Search Row: Custom Date Picker, Class, Quota -->
           <div class="search-filters-row">
-            <div class="input-block">
-              <label for="search-date">Journey Date *</label>
-              <input type="date" id="search-date" required>
+
+            <!-- Custom Date Chooser Box -->
+            <div class="input-block date-picker-box">
+              <label for="search-date-display">Journey Date *</label>
+              <div class="date-input-wrap" id="date-input-trigger">
+                <span class="input-prefix-icon">📅</span>
+                <input type="text" id="search-date-display" placeholder="Select Journey Date" readonly required>
+                <input type="hidden" id="search-date" name="journey_date">
+              </div>
+              <!-- Floating Custom Calendar Popup -->
+              <div class="calendar-dropdown-popup" id="calendar-popup" style="display: none;"></div>
             </div>
 
             <div class="input-block">
@@ -164,6 +180,60 @@
             </button>
           </div>
         </form>
+      </div>
+    </section>
+
+    <!-- ================= VIEW: PNR ENQUIRY ================= -->
+    <section class="booking-view" id="view-pnr" style="display: none;">
+      <div class="booking-card main-search-card">
+
+        <!-- PNR Card Header Tabs -->
+        <div class="card-head with-tabs">
+          <div class="card-nav-tabs">
+            <button type="button" class="card-tab-btn" id="pnr-tab-mode-search">
+              <span>🚆</span> Search Trains
+            </button>
+            <button type="button" class="card-tab-btn active" id="pnr-tab-mode-pnr">
+              <span>🎫</span> PNR Status
+            </button>
+          </div>
+          <span class="card-tag">CRIS LIVE PNR</span>
+        </div>
+
+        <form id="pnr-search-form" class="pnr-search-form">
+          <div class="pnr-input-row">
+            <div class="input-block flex-1">
+              <label for="pnr-query-input">Enter 10-Digit PNR Number *</label>
+              <div class="pnr-input-wrapper">
+                <span class="pnr-hash-icon">#</span>
+                <input type="text" id="pnr-query-input" placeholder="e.g. 245-8910432 or 10 digits" maxlength="12"
+                  required autocomplete="off">
+                <button type="submit" class="btn-pnr-submit" id="btn-submit-pnr">
+                  GET STATUS &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Test / Recent PNR Chips -->
+          <div class="quick-pnr-box">
+            <span class="quick-pnr-title">Sample / Quick Test PNRs:</span>
+            <div class="quick-pnr-list" id="quick-pnr-chips-list">
+              <button type="button" class="chip-pnr-btn" data-pnr="245-8910432">
+                <strong>245-8910432</strong> <span>(Vande Bharat Exp)</span>
+              </button>
+              <button type="button" class="chip-pnr-btn" data-pnr="412-9083125">
+                <strong>412-9083125</strong> <span>(Mumbai Rajdhani)</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+
+      <!-- Dynamic PNR Result Enquiry Container -->
+      <div class="pnr-result-section" id="pnr-result-container" style="display: none;">
+        <!-- Injected dynamically via JS -->
       </div>
     </section>
 
@@ -217,7 +287,8 @@
               </div>
               <div class="input-block">
                 <label for="booking-contact-mobile">Mobile Number *</label>
-                <input type="tel" id="booking-contact-mobile" placeholder="10-digit mobile" pattern="[0-9]{10}" required>
+                <input type="tel" id="booking-contact-mobile" placeholder="10-digit mobile" pattern="[0-9]{10}"
+                  required>
               </div>
             </div>
           </div>
@@ -285,7 +356,8 @@
             <div class="verify-head">
               <span class="verify-badge">SECURITY CHECK</span>
               <h3 class="verify-title">Swipe to Tear &amp; Verify</h3>
-              <p class="verify-instruction">Drag your cursor downwards across the dotted line to tear the pass and unlock payment.</p>
+              <p class="verify-instruction">Drag your cursor downwards across the dotted line to tear the pass and
+                unlock payment.</p>
             </div>
 
             <!-- The Tearable Interactive Pass -->
@@ -294,7 +366,7 @@
                 <div class="pass-tag">IRCTC GATE PASS</div>
                 <div class="pass-code" id="pass-temp-pnr">BOOKING MANIFEST</div>
                 <div class="pass-route" id="pass-route-text">NDLS &rarr; MMCT</div>
-                
+
                 <!-- Unlocked badge that appears upon tear -->
                 <div class="tear-success-stamp" id="tear-success-stamp">
                   <div class="stamp-check-icon">&#x2714;</div>
@@ -425,7 +497,7 @@
     <!-- ================= VIEW 6: CONFIRMED TICKET (WITH PNR & PDF DOWNLOAD) ================= -->
     <section class="booking-view" id="view-ticket" style="display: none;">
       <div class="ticket-view-wrapper">
-        
+
         <!-- Ticket Success Ribbon -->
         <div class="ticket-status-badge">
           <span class="status-icon">&#x2713;</span>
@@ -434,7 +506,7 @@
 
         <!-- The Final Confirmed Ticket Container -->
         <div class="master-ticket-container" id="printable-ticket">
-          
+
           <div class="ticket-main-body" id="ticket-main-body">
             <!-- Ticket Top Header -->
             <div class="ticket-head">
@@ -446,7 +518,8 @@
                 <span class="pnr-title">PNR NUMBER</span>
                 <div class="pnr-code-wrap">
                   <span class="pnr-number" id="ticket-pnr-display">248-9104823</span>
-                  <button type="button" class="btn-copy-pnr" id="btn-copy-pnr" title="Copy PNR to Clipboard">COPY</button>
+                  <button type="button" class="btn-copy-pnr" id="btn-copy-pnr"
+                    title="Copy PNR to Clipboard">COPY</button>
                 </div>
               </div>
             </div>
@@ -540,7 +613,8 @@
 
           <div class="form-group">
             <label for="login-password">Password *</label>
-            <input type="password" id="login-password" placeholder="Enter Password" required autocomplete="current-password">
+            <input type="password" id="login-password" placeholder="Enter Password" required
+              autocomplete="current-password">
           </div>
 
           <!-- Captcha Box -->
@@ -550,21 +624,28 @@
               <div class="captcha-display" id="login-captcha-display" title="Click to refresh">
                 <canvas id="login-captcha-canvas" width="140" height="42"></canvas>
               </div>
-              <button type="button" class="btn-refresh-captcha" id="refresh-login-captcha" title="New Captcha">&#x21bb;</button>
+              <button type="button" class="btn-refresh-captcha" id="refresh-login-captcha"
+                title="New Captcha">&#x21bb;</button>
             </div>
             <input type="text" id="login-captcha-input" placeholder="Enter Captcha Code" required autocomplete="off">
           </div>
 
           <button type="submit" class="btn-submit" id="login-submit-btn">SIGN IN</button>
-          
+
           <div class="form-footer">
+            <div
+              style="font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; text-align: center;">
+              💡 <strong>Demo Account:</strong> User ID: <code
+                style="color:var(--accent-orange); font-weight:600;">pratham</code> | Password: <code
+                style="color:var(--accent-orange); font-weight:600;">Password@123</code>
+            </div>
             <p>New to IRCTC? <a href="#" id="switch-to-register">Register an account</a></p>
           </div>
         </form>
 
         <!-- ================= REGISTRATION FORM ================= -->
         <form id="register-form" class="auth-form" style="display: none;">
-          
+
           <!-- Step Indicators -->
           <div class="register-steps">
             <div class="step-indicator active" data-step="1">1. Account</div>
@@ -576,7 +657,7 @@
           <!-- STEP 1: Account Details -->
           <div class="register-step-pane active" id="reg-step-1">
             <h3 class="step-heading">Account Details</h3>
-            
+
             <div class="form-group">
               <label for="reg-username">User ID / Username *</label>
               <input type="text" id="reg-username" placeholder="3 to 35 characters" required minlength="3">
@@ -733,7 +814,8 @@
                 <div class="captcha-display" id="reg-captcha-display" title="Click to refresh">
                   <canvas id="reg-captcha-canvas" width="140" height="42"></canvas>
                 </div>
-                <button type="button" class="btn-refresh-captcha" id="refresh-reg-captcha" title="New Captcha">&#x21bb;</button>
+                <button type="button" class="btn-refresh-captcha" id="refresh-reg-captcha"
+                  title="New Captcha">&#x21bb;</button>
               </div>
               <input type="text" id="reg-captcha-input" placeholder="Enter Captcha Code" required autocomplete="off">
             </div>
@@ -745,9 +827,11 @@
                 <button type="button" class="btn-send-otp" id="send-otp-btn">Send OTP</button>
               </div>
               <div class="otp-input-wrap">
-                <input type="text" id="reg-otp-input" placeholder="Enter 6-digit OTP" maxlength="6" autocomplete="one-time-code">
+                <input type="text" id="reg-otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
+                  autocomplete="one-time-code">
               </div>
-              <div class="otp-help-text" id="otp-help-text">Click "Send OTP" to receive verification code on your mobile/email.</div>
+              <div class="otp-help-text" id="otp-help-text">Click "Send OTP" to receive verification code on your
+                mobile/email.</div>
             </div>
 
             <div class="form-actions space-between">
@@ -766,4 +850,5 @@
   <script type="module" src="js/booking.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
+
 </html>

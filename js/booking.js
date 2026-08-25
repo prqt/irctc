@@ -1,13 +1,19 @@
 /**
- * IRCTC Ticket Booking Engine
- * Manages Indian Stations, Auth Protection, Auto-Fill, Realistic Buffering,
- * Mouse/Touch Swipe-To-Tear Human Verification, Payment & Complete Form Clearing
+ * IRCTC Ticket Booking Engine & PNR Enquiry System
+ * Features:
+ * - 250+ Station Custom Dropdown Chooser
+ * - Custom Calendar Date Picker
+ * - Browser-Style Top Progress Bar (Grey/Charcoal)
+ * - Persistent PNR Generation & Comprehensive PNR Status Enquiry
+ * - Interactive Train Class Selection & Availability Check Button
+ * - Auto-Fill, Robust Swipe-to-Tear Verification & Printable Confirmed E-Ticket
  */
 
-import { populateStationDatalist } from './stations.js';
+import { searchStations, populateStationDatalist } from './stations.js';
 import { openModal } from './app.js';
+import { getStoredBookings, saveBooking, findBookingByPnr } from './supabase.js';
 
-// Available Mock Trains
+// Available Mock Trains Database
 export const TRAINS_DATA = [
   {
     number: '22436',
@@ -71,14 +77,30 @@ export const TRAINS_DATA = [
       { code: '3A', name: 'AC 3 Tier', fare: 1820, status: 'AVL 90', statusType: 'avl' },
       { code: 'SL', name: 'Sleeper Class', fare: 720, status: 'AVL 140', statusType: 'avl' }
     ]
+  },
+  {
+    number: '12626',
+    name: 'KERALA EXPRESS',
+    type: 'Superfast Express',
+    depTime: '20:10',
+    depStation: 'NDLS',
+    arrTime: '14:20',
+    arrStation: 'TVC',
+    duration: '42h 10m',
+    runsOn: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+    classes: [
+      { code: '2A', name: 'AC 2 Tier', fare: 3450, status: 'AVL 18', statusType: 'avl' },
+      { code: '3A', name: 'AC 3 Tier', fare: 2390, status: 'AVL 52', statusType: 'avl' },
+      { code: 'SL', name: 'Sleeper Class', fare: 910, status: 'AVL 110', statusType: 'avl' }
+    ]
   }
 ];
 
 // Current Booking Session State
 export const bookingState = {
   search: {
-    from: 'NDLS - New Delhi (Delhi)',
-    to: 'MMCT - Mumbai Central (Maharashtra)',
+    from: '',
+    to: '',
     date: new Date().toISOString().split('T')[0],
     class: 'ALL',
     quota: 'GENERAL'
@@ -100,25 +122,21 @@ export const bookingState = {
   ticket: null
 };
 
+// Date picker internal state
+let calCurrentMonth = new Date().getMonth();
+let calCurrentYear = new Date().getFullYear();
+
 // DOM Initializer
 export function initBookingEngine() {
-  // Populate all Indian Stations in datalist
   populateStationDatalist('stations-list');
+  initStationDropdowns();
+  initDatePicker();
 
-  // Set default date to tomorrow
-  const dateInput = document.getElementById('search-date');
-  if (dateInput) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split('T')[0];
-    dateInput.value = dateStr;
-    dateInput.min = new Date().toISOString().split('T')[0];
-    bookingState.search.date = dateStr;
-  }
-
-  // Bind Search events
   document.getElementById('btn-swap')?.addEventListener('click', swapStations);
   document.getElementById('train-search-form')?.addEventListener('submit', handleSearchSubmit);
+
+  initPnrEnquiry();
+  bindNavigationTabs();
 
   // Navigation Links
   document.getElementById('back-to-search')?.addEventListener('click', () => switchView('search'));
@@ -159,50 +177,54 @@ export function initBookingEngine() {
 }
 
 /* ==========================================================================
-   FAKE REALISTIC BUFFERING SIMULATION
+   BROWSER-STYLE TOP PROGRESS BAR (SLENDER GREY/CHARCOAL LINE)
    ========================================================================== */
-export function triggerFakeBuffering(title, subtitle, durationMs, onComplete) {
-  const overlay = document.getElementById('loading-overlay');
-  const titleEl = document.getElementById('loading-title');
-  const subEl = document.getElementById('loading-sub');
-  const fillEl = document.getElementById('progress-fill');
-
-  if (!overlay) {
+export function triggerTopProgress(durationMs = 600, onComplete) {
+  const fill = document.getElementById('top-progress-fill');
+  if (!fill) {
     if (onComplete) onComplete();
     return;
   }
 
-  titleEl.textContent = title;
-  subEl.textContent = subtitle;
-  fillEl.style.width = '0%';
-  overlay.style.display = 'flex';
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  fill.classList.add('active');
 
-  // Smooth fake progress animation
-  const startTime = Date.now();
-  const interval = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(100, Math.floor((elapsed / durationMs) * 100));
-    fillEl.style.width = `${progress}%`;
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${durationMs * 0.7}ms cubic-bezier(0.1, 0.7, 0.1, 1)`;
+    fill.style.width = '75%';
 
-    if (elapsed >= durationMs) {
-      clearInterval(interval);
+    setTimeout(() => {
+      fill.style.transition = `width ${durationMs * 0.3}ms ease`;
+      fill.style.width = '100%';
+
       setTimeout(() => {
-        overlay.style.display = 'none';
-        if (onComplete) onComplete();
-      }, 150);
-    }
-  }, 40);
+        fill.classList.remove('active');
+        setTimeout(() => {
+          fill.style.width = '0%';
+          if (onComplete) onComplete();
+        }, 150);
+      }, durationMs * 0.3);
+    }, durationMs * 0.7);
+  });
 }
 
 /* ==========================================================================
    VIEW SWITCHER & STEPPER
    ========================================================================== */
 export function switchView(viewName) {
-  const views = ['search', 'trains', 'passengers', 'review', 'payment', 'ticket'];
+  const views = ['search', 'pnr', 'trains', 'passengers', 'review', 'payment', 'ticket'];
   views.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if (el) el.style.display = (v === viewName) ? 'block' : 'none';
   });
+
+  const stepper = document.getElementById('booking-stepper');
+  if (viewName === 'pnr') {
+    if (stepper) stepper.style.display = 'none';
+  } else {
+    if (stepper) stepper.style.display = 'flex';
+  }
 
   // Update Stepper
   const steps = document.querySelectorAll('.stepper-step');
@@ -221,21 +243,277 @@ export function switchView(viewName) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function bindNavigationTabs() {
+  // Search Card Tabs
+  document.getElementById('tab-mode-search')?.addEventListener('click', () => switchView('search'));
+  document.getElementById('tab-mode-pnr')?.addEventListener('click', () => switchView('pnr'));
+
+  // PNR Card Tabs
+  document.getElementById('pnr-tab-mode-search')?.addEventListener('click', () => switchView('search'));
+  document.getElementById('pnr-tab-mode-pnr')?.addEventListener('click', () => switchView('pnr'));
+}
+
+/* ==========================================================================
+   CUSTOM FLOATING STATION PICKER DROPDOWNS
+   ========================================================================== */
+function initStationDropdowns() {
+  setupStationField('search-from', 'dropdown-from', 'btn-clear-from');
+  setupStationField('search-to', 'dropdown-to', 'btn-clear-to');
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.station-picker-box')) {
+      document.querySelectorAll('.station-dropdown-menu').forEach(d => d.style.display = 'none');
+    }
+  });
+}
+
+function setupStationField(inputId, dropdownId, clearBtnId) {
+  const input = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  const clearBtn = document.getElementById(clearBtnId);
+
+  if (!input || !dropdown) return;
+
+  function renderList(query = '') {
+    const results = searchStations(query, 16);
+    dropdown.innerHTML = '';
+
+    if (results.length === 0) {
+      dropdown.innerHTML = `<div class="stn-no-results">No Indian railway station matched "${query}"</div>`;
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    results.forEach(stn => {
+      const item = document.createElement('div');
+      item.className = 'station-dropdown-item';
+      item.innerHTML = `
+        <div class="stn-left">
+          <span class="stn-code-badge">${stn.code}</span>
+          <span class="stn-name-text">${stn.name}</span>
+        </div>
+        <span class="stn-state-tag">${stn.state}</span>
+      `;
+
+      item.addEventListener('click', () => {
+        const fullVal = `${stn.code} - ${stn.name} (${stn.state})`;
+        input.value = fullVal;
+        dropdown.style.display = 'none';
+        if (clearBtn) clearBtn.style.display = 'block';
+
+        if (inputId === 'search-from') {
+          bookingState.search.from = fullVal;
+          document.getElementById('search-to')?.focus();
+        } else {
+          bookingState.search.to = fullVal;
+        }
+      });
+
+      dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = 'block';
+  }
+
+  input.addEventListener('focus', () => {
+    document.querySelectorAll('.station-dropdown-menu').forEach(d => {
+      if (d !== dropdown) d.style.display = 'none';
+    });
+    renderList(input.value);
+  });
+
+  input.addEventListener('input', () => {
+    if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
+    renderList(input.value);
+  });
+
+  clearBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    input.value = '';
+    clearBtn.style.display = 'none';
+    input.focus();
+    renderList('');
+  });
+}
+
 function swapStations() {
   const fromEl = document.getElementById('search-from');
   const toEl = document.getElementById('search-to');
   const temp = fromEl.value;
   fromEl.value = toEl.value;
   toEl.value = temp;
+
+  bookingState.search.from = fromEl.value;
+  bookingState.search.to = toEl.value;
+
+  const clearFrom = document.getElementById('btn-clear-from');
+  const clearTo = document.getElementById('btn-clear-to');
+  if (clearFrom) clearFrom.style.display = fromEl.value ? 'block' : 'none';
+  if (clearTo) clearTo.style.display = toEl.value ? 'block' : 'none';
 }
 
 /* ==========================================================================
-   STEP 1: SEARCH TRAINS (AUTH CHECK & AUTO-FILL)
+   CUSTOM CALENDAR DATE PICKER (OPENS RIGHT BELOW INPUT)
+   ========================================================================== */
+function initDatePicker() {
+  const displayInput = document.getElementById('search-date-display');
+  const hiddenInput = document.getElementById('search-date');
+  const popup = document.getElementById('calendar-popup');
+
+  if (!displayInput || !hiddenInput || !popup) return;
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  setDateValue(tomorrow);
+
+  displayInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = popup.style.display === 'block';
+    document.querySelectorAll('.station-dropdown-menu').forEach(d => d.style.display = 'none');
+    
+    if (isVisible) {
+      popup.style.display = 'none';
+    } else {
+      renderCalendar();
+      popup.style.display = 'block';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.date-picker-box')) {
+      popup.style.display = 'none';
+    }
+  });
+}
+
+function setDateValue(dateObj) {
+  const hiddenInput = document.getElementById('search-date');
+  const displayInput = document.getElementById('search-date-display');
+  const isoDate = dateObj.toISOString().split('T')[0];
+
+  hiddenInput.value = isoDate;
+  bookingState.search.date = isoDate;
+
+  const formatted = dateObj.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+  displayInput.value = formatted;
+}
+
+function renderCalendar() {
+  const popup = document.getElementById('calendar-popup');
+  if (!popup) return;
+
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const selectedDateStr = bookingState.search.date;
+  const selectedDate = selectedDateStr ? new Date(selectedDateStr) : null;
+  if (selectedDate) selectedDate.setHours(0, 0, 0, 0);
+
+  popup.innerHTML = `
+    <div class="cal-header-bar">
+      <span class="cal-month-title">${months[calCurrentMonth]} ${calCurrentYear}</span>
+      <div class="cal-nav-buttons">
+        <button type="button" class="cal-nav-btn" id="cal-prev-btn">&larr;</button>
+        <button type="button" class="cal-nav-btn" id="cal-next-btn">&rarr;</button>
+      </div>
+    </div>
+
+    <div class="cal-quick-chips">
+      <button type="button" class="cal-chip" data-offset="0">Today</button>
+      <button type="button" class="cal-chip" data-offset="1">Tomorrow</button>
+      <button type="button" class="cal-chip" data-offset="2">+2 Days</button>
+      <button type="button" class="cal-chip" data-offset="7">+1 Week</button>
+    </div>
+
+    <div class="cal-week-row">
+      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+    </div>
+
+    <div class="cal-days-grid" id="cal-days-grid"></div>
+  `;
+
+  document.getElementById('cal-prev-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    calCurrentMonth--;
+    if (calCurrentMonth < 0) {
+      calCurrentMonth = 11;
+      calCurrentYear--;
+    }
+    renderCalendar();
+  });
+
+  document.getElementById('cal-next-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    calCurrentMonth++;
+    if (calCurrentMonth > 11) {
+      calCurrentMonth = 0;
+      calCurrentYear++;
+    }
+    renderCalendar();
+  });
+
+  popup.querySelectorAll('.cal-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const offset = parseInt(chip.getAttribute('data-offset'), 10);
+      const target = new Date();
+      target.setDate(target.getDate() + offset);
+      setDateValue(target);
+      popup.style.display = 'none';
+    });
+  });
+
+  const daysGrid = document.getElementById('cal-days-grid');
+  const firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay();
+  const totalDays = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'cal-day-cell disabled';
+    daysGrid.appendChild(emptyCell);
+  }
+
+  for (let d = 1; d <= totalDays; d++) {
+    const cellDate = new Date(calCurrentYear, calCurrentMonth, d);
+    cellDate.setHours(0, 0, 0, 0);
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-day-cell';
+    cell.textContent = d;
+
+    const isPast = cellDate < today;
+    const isToday = cellDate.getTime() === today.getTime();
+    const isSelected = selectedDate && cellDate.getTime() === selectedDate.getTime();
+
+    if (isPast) {
+      cell.classList.add('disabled');
+    } else {
+      if (isToday) cell.classList.add('today');
+      if (isSelected) cell.classList.add('selected');
+
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDateValue(cellDate);
+        popup.style.display = 'none';
+      });
+    }
+
+    daysGrid.appendChild(cell);
+  }
+}
+
+/* ==========================================================================
+   STEP 1: SEARCH TRAINS
    ========================================================================== */
 function handleSearchSubmit(e) {
   e.preventDefault();
 
-  // Check Login Requirement
   const activeSession = localStorage.getItem('irctc_active_session');
   if (!activeSession) {
     showToast('🔒 IRCTC Login Required to search and reserve train tickets.');
@@ -243,31 +521,39 @@ function handleSearchSubmit(e) {
     return;
   }
 
-  bookingState.search.from = document.getElementById('search-from').value.trim();
-  bookingState.search.to = document.getElementById('search-to').value.trim();
+  const fromVal = document.getElementById('search-from').value.trim();
+  const toVal = document.getElementById('search-to').value.trim();
+
+  if (!fromVal) {
+    showToast('Please choose a departure station.');
+    document.getElementById('search-from').focus();
+    return;
+  }
+  if (!toVal) {
+    showToast('Please choose a destination station.');
+    document.getElementById('search-to').focus();
+    return;
+  }
+
+  bookingState.search.from = fromVal;
+  bookingState.search.to = toVal;
   bookingState.search.date = document.getElementById('search-date').value;
   bookingState.search.class = document.getElementById('search-class').value;
   bookingState.search.quota = document.getElementById('search-quota').value;
 
-  // Realistic CRIS Server Buffering
-  triggerFakeBuffering(
-    'Connecting to CRIS Central Railway System...',
-    'Querying live seat matrix, tatkal quotas & dynamic fare algorithm',
-    1100,
-    () => {
-      renderTrainsList();
-      switchView('trains');
-    }
-  );
+  triggerTopProgress(500, () => {
+    renderTrainsList();
+    switchView('trains');
+  });
 }
 
 /* ==========================================================================
-   STEP 2: TRAIN LIST RENDERING
+   STEP 2: TRAIN LIST RENDERING & SELECTION WITH "CHECK AVAILABILITY" BUTTON
    ========================================================================== */
 function renderTrainsList() {
   const summaryEl = document.getElementById('search-summary-text');
-  const fromCode = bookingState.search.from.split(' - ')[0] || bookingState.search.from;
-  const toCode = bookingState.search.to.split(' - ')[0] || bookingState.search.to;
+  const fromCode = (bookingState.search.from || 'NDLS').split(' - ')[0] || 'NDLS';
+  const toCode = (bookingState.search.to || 'MMCT').split(' - ')[0] || 'MMCT';
   summaryEl.textContent = `${fromCode} → ${toCode} | ${formatDate(bookingState.search.date)} | ${bookingState.search.quota} Quota`;
 
   const container = document.getElementById('trains-list-container');
@@ -276,6 +562,7 @@ function renderTrainsList() {
   TRAINS_DATA.forEach(train => {
     const card = document.createElement('div');
     card.className = 'train-card';
+    card.setAttribute('data-train-num', train.number);
 
     let classPillsHtml = '';
     train.classes.forEach(cls => {
@@ -327,14 +614,39 @@ function renderTrainsList() {
       <div class="train-classes-scroll">
         ${classPillsHtml}
       </div>
+
+      <div class="train-bottom-action" id="action-box-${train.number}" style="display: none;"></div>
     `;
 
-    // Bind Class selection
     card.querySelectorAll('.class-fare-box').forEach(box => {
       box.addEventListener('click', () => {
         const trainNum = box.getAttribute('data-train');
         const classCode = box.getAttribute('data-class');
-        selectTrainAndClass(trainNum, classCode);
+        const fare = box.getAttribute('data-fare');
+
+        document.querySelectorAll('.class-fare-box').forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('.train-bottom-action').forEach(act => {
+          act.style.display = 'none';
+          act.innerHTML = '';
+        });
+
+        box.classList.add('selected');
+
+        const actionBox = document.getElementById(`action-box-${trainNum}`);
+        if (actionBox) {
+          actionBox.innerHTML = `
+            <button type="button" class="btn-check-avail" id="btn-avail-${trainNum}">
+              <span>🔍</span> Check Availability &amp; Book ${classCode} (₹${fare}) &rarr;
+            </button>
+          `;
+          actionBox.style.display = 'flex';
+
+          actionBox.querySelector('.btn-check-avail').addEventListener('click', () => {
+            triggerTopProgress(450, () => {
+              selectTrainAndClass(trainNum, classCode);
+            });
+          });
+        }
       });
     });
 
@@ -343,22 +655,20 @@ function renderTrainsList() {
 }
 
 function selectTrainAndClass(trainNumber, classCode) {
-  const train = TRAINS_DATA.find(t => t.number === trainNumber);
-  const cls = train.classes.find(c => c.code === classCode);
+  const train = TRAINS_DATA.find(t => t.number === trainNumber) || TRAINS_DATA[0];
+  const cls = train.classes.find(c => c.code === classCode) || train.classes[0];
   bookingState.selectedTrain = train;
   bookingState.selectedClass = cls;
 
-  // Auto-fill logged in user's profile info into passenger 1 and contact info
   const activeSession = localStorage.getItem('irctc_active_session');
-  let defaultPassenger = { name: '', age: 28, gender: 'Male', berth: 'No Preference', food: 'Veg', concession: 'None' };
+  let defaultPassenger = { name: '', age: 26, gender: 'Male', berth: 'No Preference', food: 'Veg', concession: 'None' };
 
   if (activeSession) {
     try {
       const u = JSON.parse(activeSession);
       const fullName = `${u.firstName || ''} ${u.middleName || ''} ${u.lastName || ''}`.replace(/\s+/g, ' ').trim() || u.username;
       
-      // Calculate age from DOB if present
-      let userAge = 28;
+      let userAge = 26;
       if (u.dob) {
         const birthYear = new Date(u.dob).getFullYear();
         if (!isNaN(birthYear)) userAge = Math.max(18, new Date().getFullYear() - birthYear);
@@ -368,8 +678,10 @@ function selectTrainAndClass(trainNumber, classCode) {
       defaultPassenger.age = userAge;
       defaultPassenger.gender = u.gender || 'Male';
 
-      if (u.email) document.getElementById('booking-contact-email').value = u.email;
-      if (u.mobile) document.getElementById('booking-contact-mobile').value = u.mobile;
+      const emailEl = document.getElementById('booking-contact-email');
+      const mobileEl = document.getElementById('booking-contact-mobile');
+      if (emailEl && u.email) emailEl.value = u.email;
+      if (mobileEl && u.mobile) mobileEl.value = u.mobile;
     } catch (e) {
       console.error(e);
     }
@@ -385,9 +697,12 @@ function selectTrainAndClass(trainNumber, classCode) {
    ========================================================================== */
 function renderPassengerInputs() {
   const pill = document.getElementById('passenger-train-pill');
-  pill.textContent = `${bookingState.selectedTrain.number} ${bookingState.selectedTrain.name} | Class: ${bookingState.selectedClass.code} (₹${bookingState.selectedClass.fare}/seat)`;
+  if (pill && bookingState.selectedTrain && bookingState.selectedClass) {
+    pill.textContent = `${bookingState.selectedTrain.number} ${bookingState.selectedTrain.name} | Class: ${bookingState.selectedClass.code} (₹${bookingState.selectedClass.fare}/seat)`;
+  }
 
   const container = document.getElementById('passengers-inputs-container');
+  if (!container) return;
   container.innerHTML = '';
 
   bookingState.passengers.forEach((p, index) => {
@@ -503,11 +818,19 @@ function handlePassengersSubmit(e) {
     }
   }
 
-  const email = document.getElementById('booking-contact-email').value.trim();
-  const mobile = document.getElementById('booking-contact-mobile').value.trim();
+  const emailEl = document.getElementById('booking-contact-email');
+  const mobileEl = document.getElementById('booking-contact-mobile');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const mobile = mobileEl ? mobileEl.value.trim().replace(/[^0-9]/g, '') : '';
 
-  if (!email || !mobile || mobile.length !== 10) {
-    showToast('Please enter valid contact email and 10-digit mobile number.');
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid email address for ticket delivery.');
+    emailEl?.focus();
+    return;
+  }
+  if (!mobile || mobile.length !== 10) {
+    showToast('Please enter a valid 10-digit mobile number for SMS ticket updates.');
+    mobileEl?.focus();
     return;
   }
 
@@ -517,14 +840,17 @@ function handlePassengersSubmit(e) {
   calculateBill();
   renderPaperBill();
   resetSwipeToTear();
-  switchView('review');
+
+  triggerTopProgress(400, () => {
+    switchView('review');
+  });
 }
 
 /* ==========================================================================
-   STEP 4: PAPER BILL CALCULATION & RENDERING
+   STEP 4: PAPER BILL CALCULATION & SWIPE-TO-TEAR
    ========================================================================== */
 function calculateBill() {
-  const perTicket = bookingState.selectedClass.fare;
+  const perTicket = (bookingState.selectedClass && bookingState.selectedClass.fare) ? bookingState.selectedClass.fare : 1850;
   let totalBase = 0;
 
   bookingState.passengers.forEach(p => {
@@ -550,172 +876,173 @@ function calculateBill() {
 
 function renderPaperBill() {
   const dateStr = formatDate(bookingState.search.date);
-  document.getElementById('bill-date-time').textContent = `INVOICE DATE: ${new Date().toLocaleDateString('en-GB')} | IRCTC ONLINE`;
+  const billDateTime = document.getElementById('bill-date-time');
+  if (billDateTime) billDateTime.textContent = `INVOICE DATE: ${new Date().toLocaleDateString('en-GB')} | IRCTC ONLINE`;
+
+  const trainNum = bookingState.selectedTrain ? bookingState.selectedTrain.number : '12952';
+  const trainName = bookingState.selectedTrain ? bookingState.selectedTrain.name : 'MUMBAI RAJDHANI EXP';
+  const depTime = bookingState.selectedTrain ? bookingState.selectedTrain.depTime : '16:55';
+  const fromCode = (bookingState.search.from || 'NDLS').split(' - ')[0] || 'NDLS';
+  const toCode = (bookingState.search.to || 'MMCT').split(' - ')[0] || 'MMCT';
+  const classCode = bookingState.selectedClass ? bookingState.selectedClass.code : '3A';
+  const className = bookingState.selectedClass ? bookingState.selectedClass.name : 'AC 3 Tier';
 
   const journeyInfo = document.getElementById('bill-journey-info');
-  journeyInfo.innerHTML = `
-    <div class="bill-row">
-      <span class="bill-label">TRAIN:</span>
-      <span class="bill-val bold">${bookingState.selectedTrain.number} ${bookingState.selectedTrain.name}</span>
-    </div>
-    <div class="bill-row">
-      <span class="bill-label">ROUTE:</span>
-      <span class="bill-val">${bookingState.search.from.split(' - ')[0]} &rarr; ${bookingState.search.to.split(' - ')[0]}</span>
-    </div>
-    <div class="bill-row">
-      <span class="bill-label">JOURNEY DATE:</span>
-      <span class="bill-val">${dateStr} (${bookingState.selectedTrain.depTime} HRS)</span>
-    </div>
-    <div class="bill-row">
-      <span class="bill-label">CLASS / QUOTA:</span>
-      <span class="bill-val bold">${bookingState.selectedClass.code} (${bookingState.selectedClass.name}) / ${bookingState.search.quota}</span>
-    </div>
-  `;
-
-  const paxList = document.getElementById('bill-passengers-list');
-  paxList.innerHTML = '';
-  bookingState.passengers.forEach((p, i) => {
-    const row = document.createElement('div');
-    row.className = 'bill-pax-item';
-    row.innerHTML = `
-      <div class="pax-meta">
-        <span class="pax-num">${i + 1}.</span>
-        <span class="pax-name-txt">${p.name.toUpperCase()} (${p.age}, ${p.gender.charAt(0)})</span>
+  if (journeyInfo) {
+    journeyInfo.innerHTML = `
+      <div class="bill-row">
+        <span class="bill-label">TRAIN:</span>
+        <span class="bill-val bold">${trainNum} ${trainName}</span>
       </div>
-      <div class="pax-sub-meta">
-        <span>Berth: ${p.berth} | Meal: ${p.food} ${p.concession !== 'None' ? `| ${p.concession}` : ''}</span>
-        <span class="pax-fare-txt">₹${p.calculatedFare.toFixed(2)}</span>
+      <div class="bill-row">
+        <span class="bill-label">ROUTE:</span>
+        <span class="bill-val">${fromCode} &rarr; ${toCode}</span>
+      </div>
+      <div class="bill-row">
+        <span class="bill-label">JOURNEY DATE:</span>
+        <span class="bill-val">${dateStr} (${depTime} HRS)</span>
+      </div>
+      <div class="bill-row">
+        <span class="bill-label">CLASS / QUOTA:</span>
+        <span class="bill-val bold">${classCode} (${className}) / ${bookingState.search.quota || 'GENERAL'}</span>
       </div>
     `;
-    paxList.appendChild(row);
-  });
+  }
+
+  const paxList = document.getElementById('bill-passengers-list');
+  if (paxList) {
+    paxList.innerHTML = '';
+    bookingState.passengers.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'bill-pax-item';
+      row.innerHTML = `
+        <div class="pax-meta">
+          <span class="pax-num">${i + 1}.</span>
+          <span class="pax-name-txt">${p.name.toUpperCase()} (${p.age}, ${p.gender.charAt(0)})</span>
+        </div>
+        <div class="pax-sub-meta">
+          <span>Berth: ${p.berth} | Meal: ${p.food} ${p.concession !== 'None' ? `| ${p.concession}` : ''}</span>
+          <span class="pax-fare-txt">₹${(p.calculatedFare || 0).toFixed(2)}</span>
+        </div>
+      `;
+      paxList.appendChild(row);
+    });
+  }
 
   const fareBox = document.getElementById('bill-fare-breakdown');
-  fareBox.innerHTML = `
-    <div class="bill-row">
-      <span class="bill-label">Base Ticket Fare (${bookingState.passengers.length} Pax):</span>
-      <span class="bill-val">₹${bookingState.pricing.baseFare.toFixed(2)}</span>
-    </div>
-    <div class="bill-row">
-      <span class="bill-label">IRCTC Convenience Fee (Incl. GST):</span>
-      <span class="bill-val">₹${bookingState.pricing.irctcFee.toFixed(2)}</span>
-    </div>
-    <div class="bill-row">
-      <span class="bill-label">GST / Railway Cess (5%):</span>
-      <span class="bill-val">₹${bookingState.pricing.gst.toFixed(2)}</span>
-    </div>
-  `;
+  if (fareBox) {
+    fareBox.innerHTML = `
+      <div class="bill-row">
+        <span class="bill-label">Base Ticket Fare (${bookingState.passengers.length} Pax):</span>
+        <span class="bill-val">₹${bookingState.pricing.baseFare.toFixed(2)}</span>
+      </div>
+      <div class="bill-row">
+        <span class="bill-label">IRCTC Convenience Fee (Incl. GST):</span>
+        <span class="bill-val">₹${bookingState.pricing.irctcFee.toFixed(2)}</span>
+      </div>
+      <div class="bill-row">
+        <span class="bill-label">Travel Insurance &amp; GST (5%):</span>
+        <span class="bill-val">₹${bookingState.pricing.gst.toFixed(2)}</span>
+      </div>
+      <div class="bill-divider"></div>
+      <div class="bill-row grand-total">
+        <span class="bill-label">TOTAL AMOUNT TO PAY:</span>
+        <span class="bill-val">₹${bookingState.pricing.total.toFixed(2)}</span>
+      </div>
+    `;
+  }
 
-  const totalRow = document.getElementById('bill-total-row');
-  totalRow.innerHTML = `
-    <span class="bill-total-label">TOTAL AMOUNT PAYABLE:</span>
-    <span class="bill-total-amount">₹${bookingState.pricing.total.toFixed(2)}</span>
-  `;
-
-  document.getElementById('payment-amount-display').textContent = `Amount to Pay: ₹${bookingState.pricing.total.toFixed(2)}`;
-
-  // Pass preview data
-  const passPnr = document.getElementById('pass-temp-pnr');
-  if (passPnr) passPnr.textContent = `${bookingState.selectedTrain.number} / ${bookingState.selectedClass.code}`;
+  const passTempPnr = document.getElementById('pass-temp-pnr');
+  if (passTempPnr) passTempPnr.textContent = `${trainNum} ${trainName}`;
   const passRoute = document.getElementById('pass-route-text');
-  if (passRoute) passRoute.textContent = `${bookingState.search.from.split(' - ')[0]} → ${bookingState.search.to.split(' - ')[0]}`;
+  if (passRoute) passRoute.textContent = `${fromCode} → ${toCode}`;
 }
 
 /* ==========================================================================
-   INTERACTIVE MOUSE/TOUCH SWIPE-TO-TEAR HUMAN VERIFICATION
+   HUMAN VERIFICATION: SWIPE-TO-TEAR PASS
    ========================================================================== */
 function initSwipeToTear() {
-  const track = document.getElementById('pass-tear-track');
   const thumb = document.getElementById('tear-slider-thumb');
   const stub = document.getElementById('pass-stub-side');
-  const stamp = document.getElementById('tear-success-stamp');
-  const proceedBtn = document.getElementById('btn-proceed-to-payment');
-
-  if (!track || !thumb) return;
+  if (!thumb && !stub) return;
 
   let isDragging = false;
   let startY = 0;
   let currentY = 0;
-  let maxDistance = 0;
 
-  const onStart = (clientY) => {
+  function onStart(e) {
     if (bookingState.isHumanVerified) return;
     isDragging = true;
-    startY = clientY;
-    maxDistance = track.clientHeight - thumb.clientHeight;
-    thumb.classList.add('dragging');
-  };
+    startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+    if (thumb) thumb.style.transition = 'none';
+    if (stub) stub.style.transition = 'none';
+  }
 
-  const onMove = (clientY) => {
+  function onMove(e) {
     if (!isDragging || bookingState.isHumanVerified) return;
-    const deltaY = clientY - startY;
-    currentY = Math.max(0, Math.min(deltaY, maxDistance));
-    thumb.style.transform = `translateY(${currentY}px)`;
+    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+    currentY = Math.max(0, clientY - startY);
 
-    // Check if torn (>= 75% down)
-    if (currentY >= maxDistance * 0.75) {
+    if (currentY < 120) {
+      if (thumb) thumb.style.transform = `translateY(${currentY}px)`;
+      if (stub) stub.style.transform = `translateY(${currentY * 0.6}px) rotate(${currentY * 0.04}deg)`;
+    } else {
       completeTear();
     }
-  };
+  }
 
-  const onEnd = () => {
-    if (!isDragging) return;
+  function onEnd() {
+    if (!isDragging || bookingState.isHumanVerified) return;
     isDragging = false;
-    thumb.classList.remove('dragging');
-
-    if (!bookingState.isHumanVerified) {
-      // Snap back
-      thumb.style.transition = 'transform 0.3s ease';
+    if (thumb) {
+      thumb.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
       thumb.style.transform = 'translateY(0px)';
-      setTimeout(() => {
-        thumb.style.transition = '';
-      }, 300);
     }
-  };
+    if (stub) {
+      stub.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      stub.style.transform = 'translateY(0px)';
+    }
+  }
 
   function completeTear() {
     isDragging = false;
     bookingState.isHumanVerified = true;
 
-    // Trigger Falling Physics on Stub
-    stub.classList.add('falling');
+    if (thumb) {
+      thumb.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+      thumb.style.transform = 'translateY(160px)';
+      thumb.style.opacity = '0';
+    }
+    if (stub) {
+      stub.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+      stub.style.transform = 'translateY(180px) rotate(12deg)';
+      stub.style.opacity = '0';
+    }
 
     setTimeout(() => {
-      stub.classList.add('torn');
-      stub.classList.remove('falling');
-      thumb.style.display = 'none';
-      stamp.classList.add('active');
+      const successStamp = document.getElementById('tear-success-stamp');
+      if (successStamp) successStamp.style.display = 'flex';
 
-      // Unlock payment button
-      proceedBtn.disabled = false;
-      proceedBtn.innerHTML = `PROCEED TO PAYMENT (₹${bookingState.pricing.total.toFixed(2)}) &rarr;`;
-      proceedBtn.classList.add('unlocked');
-
+      const payBtn = document.getElementById('btn-proceed-to-payment');
+      if (payBtn) {
+        payBtn.disabled = false;
+        payBtn.classList.remove('disabled');
+        payBtn.textContent = `PROCEED TO PAYMENT (₹${bookingState.pricing.total.toFixed(2)}) →`;
+      }
       showToast('✔ Human verification complete! Security gate unlocked.');
-    }, 600);
+    }, 250);
   }
 
-  // Mouse Listeners
-  thumb.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    onStart(e.clientY);
+  // Bind drag events on slider thumb & stub
+  [thumb, stub].forEach(el => {
+    if (!el) return;
+    el.addEventListener('mousedown', onStart);
+    el.addEventListener('touchstart', onStart, { passive: true });
   });
 
-  window.addEventListener('mousemove', (e) => {
-    if (isDragging) onMove(e.clientY);
-  });
-
+  window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onEnd);
-
-  // Touch Listeners (Mobile & Tablet)
-  thumb.addEventListener('touchstart', (e) => {
-    onStart(e.touches[0].clientY);
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (isDragging) onMove(e.touches[0].clientY);
-  }, { passive: true });
-
+  window.addEventListener('touchmove', onMove, { passive: true });
   window.addEventListener('touchend', onEnd);
 }
 
@@ -723,30 +1050,41 @@ function resetSwipeToTear() {
   bookingState.isHumanVerified = false;
   const thumb = document.getElementById('tear-slider-thumb');
   const stub = document.getElementById('pass-stub-side');
-  const stamp = document.getElementById('tear-success-stamp');
-  const proceedBtn = document.getElementById('btn-proceed-to-payment');
+  const successStamp = document.getElementById('tear-success-stamp');
+  const payBtn = document.getElementById('btn-proceed-to-payment');
 
   if (thumb) {
     thumb.style.display = 'flex';
     thumb.style.transform = 'translateY(0px)';
+    thumb.style.opacity = '1';
+    thumb.style.transition = 'none';
   }
-  if (stub) stub.classList.remove('falling', 'torn');
-  if (stamp) stamp.classList.remove('active');
-  if (proceedBtn) {
-    proceedBtn.disabled = true;
-    proceedBtn.innerHTML = `LOCKED &mdash; SWIPE TO UNLOCK`;
-    proceedBtn.classList.remove('unlocked');
+  if (stub) {
+    stub.style.display = 'block';
+    stub.style.transform = 'translateY(0px)';
+    stub.style.opacity = '1';
+    stub.style.transition = 'none';
+  }
+  if (successStamp) successStamp.style.display = 'none';
+  if (payBtn) {
+    payBtn.disabled = true;
+    payBtn.classList.add('disabled');
+    payBtn.textContent = '🔒 SWIPE TO UNLOCK PAYMENT';
   }
 }
 
 /* ==========================================================================
-   STEP 5: PAYMENT LOGIC & FORM CLEARING
+   STEP 5: PAYMENT ENGINE & FINAL CONFIRMATION
    ========================================================================== */
 function initPaymentTabs() {
-  document.querySelectorAll('.pay-tab').forEach(tab => {
+  const tabs = document.querySelectorAll('.pay-tab');
+  const panels = document.querySelectorAll('.pay-method-panel');
+
+  tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.pay-method-panel').forEach(p => p.style.display = 'none');
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.style.display = 'none');
+
       tab.classList.add('active');
       const method = tab.getAttribute('data-paymethod');
       const panel = document.getElementById(`panel-${method}`);
@@ -767,27 +1105,22 @@ function initPaymentTabs() {
 function handlePaymentSubmit(e) {
   e.preventDefault();
 
-  // Trigger Realistic Payment Buffering
-  triggerFakeBuffering(
-    'Connecting to Secure IRCTC Payment Gateway...',
-    'Performing 256-bit SSL handshake & reserving coach berth matrix',
-    1400,
-    () => {
-      generateConfirmedTicket();
-      clearPaymentForms(); // Form fields wiped
-      switchView('ticket');
-      showToast('Payment successful! Your confirmed e-ticket has been issued.');
-    }
-  );
+  triggerTopProgress(800, () => {
+    generateConfirmedTicket();
+    clearPaymentForms();
+    switchView('ticket');
+    showToast('Payment successful! Your confirmed e-ticket has been issued.');
+  });
 }
 
 /* ==========================================================================
-   STEP 6: TICKET GENERATION & FINAL VIEW
+   STEP 6: TICKET GENERATION & DATABASE PERSISTENCE
    ========================================================================== */
 function generateConfirmedTicket() {
   const pnr = generatePnr();
   const txnId = `IRCTC${Math.floor(10000000 + Math.random() * 90000000)}`;
-  const coachPrefix = bookingState.selectedClass.code === '1A' ? 'H1' : (bookingState.selectedClass.code === '2A' ? 'A1' : (bookingState.selectedClass.code === 'EC' ? 'E1' : 'B3'));
+  const classCode = bookingState.selectedClass ? bookingState.selectedClass.code : '3A';
+  const coachPrefix = classCode === '1A' ? 'H1' : (classCode === '2A' ? 'A1' : (classCode === 'EC' ? 'E1' : 'B3'));
 
   bookingState.ticket = {
     pnr: pnr,
@@ -795,53 +1128,101 @@ function generateConfirmedTicket() {
     coachPrefix: coachPrefix
   };
 
-  // Populate UI
+  const trainNum = bookingState.selectedTrain ? bookingState.selectedTrain.number : '12952';
+  const trainName = bookingState.selectedTrain ? bookingState.selectedTrain.name : 'MUMBAI RAJDHANI EXP';
+  const trainType = bookingState.selectedTrain ? bookingState.selectedTrain.type : 'Superfast Express';
+  const depTime = bookingState.selectedTrain ? bookingState.selectedTrain.depTime : '16:55';
+  const arrTime = bookingState.selectedTrain ? bookingState.selectedTrain.arrTime : '08:35';
+  const duration = bookingState.selectedTrain ? bookingState.selectedTrain.duration : '15h 40m';
+  const className = bookingState.selectedClass ? bookingState.selectedClass.name : 'AC 3 Tier';
+
   document.getElementById('ticket-pnr-display').textContent = pnr;
   document.getElementById('ticket-txn-id').textContent = txnId;
   document.getElementById('ticket-quota-display').textContent = bookingState.search.quota;
-  document.getElementById('ticket-class-display').textContent = `${bookingState.selectedClass.code} (${bookingState.selectedClass.name})`;
+  document.getElementById('ticket-class-display').textContent = `${classCode} (${className})`;
   document.getElementById('ticket-fare-display').textContent = `₹${bookingState.pricing.total.toFixed(2)}`;
 
-  // Route grid
   const routeEl = document.getElementById('ticket-route-info');
-  routeEl.innerHTML = `
-    <div class="ticket-route-col">
-      <div class="ticket-station-name">${bookingState.search.from}</div>
-      <div class="ticket-time-bold">${bookingState.selectedTrain.depTime} HRS</div>
-      <div class="ticket-sub-date">${formatDate(bookingState.search.date)}</div>
-    </div>
-    <div class="ticket-train-center">
-      <div class="ticket-train-num">${bookingState.selectedTrain.number}</div>
-      <div class="ticket-train-name">${bookingState.selectedTrain.name}</div>
-      <div class="ticket-arrow-route">&bull;&mdash;&mdash;&mdash;&gt;&bull;</div>
-    </div>
-    <div class="ticket-route-col right-align">
-      <div class="ticket-station-name">${bookingState.search.to}</div>
-      <div class="ticket-time-bold">${bookingState.selectedTrain.arrTime} HRS</div>
-      <div class="ticket-sub-date">Arrival</div>
-    </div>
-  `;
-
-  // Passengers Table
-  const tbody = document.getElementById('ticket-passengers-tbody');
-  tbody.innerHTML = '';
-  bookingState.passengers.forEach((p, idx) => {
-    const seatNum = 18 + idx * 3;
-    const berthShort = p.berth === 'Lower Berth' ? 'LB' : (p.berth === 'Upper Berth' ? 'UB' : (p.berth === 'Middle Berth' ? 'MB' : 'WS'));
-    const seatStr = `${coachPrefix}-${seatNum} (${berthShort})`;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td class="bold">${p.name.toUpperCase()}</td>
-      <td>${p.age} / ${p.gender.charAt(0)}</td>
-      <td class="bold seat-badge">${seatStr}</td>
-      <td class="status-cnf"><span class="cnf-pill">CNF / CONFIRMED</span></td>
+  if (routeEl) {
+    routeEl.innerHTML = `
+      <div class="ticket-route-col">
+        <div class="ticket-station-name">${bookingState.search.from}</div>
+        <div class="ticket-time-bold">${depTime} HRS</div>
+        <div class="ticket-sub-date">${formatDate(bookingState.search.date)}</div>
+      </div>
+      <div class="ticket-train-center">
+        <div class="ticket-train-num">${trainNum}</div>
+        <div class="ticket-train-name">${trainName}</div>
+        <div class="ticket-arrow-route">&bull;&mdash;&mdash;&mdash;&gt;&bull;</div>
+      </div>
+      <div class="ticket-route-col right-align">
+        <div class="ticket-station-name">${bookingState.search.to}</div>
+        <div class="ticket-time-bold">${arrTime} HRS</div>
+        <div class="ticket-sub-date">Arrival</div>
+      </div>
     `;
-    tbody.appendChild(tr);
-  });
+  }
 
-  renderQrCanvas();
+  const tbody = document.getElementById('ticket-passengers-tbody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    const storedPax = [];
+
+    bookingState.passengers.forEach((p, idx) => {
+      const seatNum = 18 + idx * 3;
+      const berthShort = p.berth === 'Lower Berth' ? 'LB' : (p.berth === 'Upper Berth' ? 'UB' : (p.berth === 'Middle Berth' ? 'MB' : 'WS'));
+      const seatStr = `${coachPrefix}-${seatNum} (${berthShort})`;
+
+      storedPax.push({
+        name: p.name.toUpperCase(),
+        age: p.age,
+        gender: p.gender,
+        berthPref: p.berth,
+        food: p.food,
+        bookingStatus: `CNF / ${coachPrefix} / ${seatNum} / ${berthShort}`,
+        currentStatus: 'CNF / CONFIRMED',
+        coach: coachPrefix,
+        berthNumber: `${seatNum}`,
+        berthType: `${p.berth} (${berthShort})`
+      });
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td class="bold">${p.name.toUpperCase()}</td>
+        <td>${p.age} / ${p.gender.charAt(0)}</td>
+        <td class="bold seat-badge">${seatStr}</td>
+        <td class="status-cnf"><span class="cnf-pill">CNF / CONFIRMED</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    renderQrCanvas();
+
+    const bookingRecord = {
+      pnr: pnr,
+      txnId: txnId,
+      bookingDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      journeyDate: formatDate(bookingState.search.date),
+      trainNumber: trainNum,
+      trainName: trainName,
+      trainType: trainType,
+      fromStation: bookingState.search.from,
+      toStation: bookingState.search.to,
+      depTime: depTime,
+      arrTime: arrTime,
+      duration: duration,
+      classCode: classCode,
+      className: className,
+      quota: bookingState.search.quota,
+      chartStatus: 'CHART NOT PREPARED',
+      totalFare: bookingState.pricing.total,
+      contact: { ...bookingState.contact },
+      passengers: storedPax
+    };
+
+    saveBooking(bookingRecord);
+  }
 }
 
 function renderQrCanvas() {
@@ -886,10 +1267,164 @@ function copyPnr() {
 }
 
 /* ==========================================================================
-   FORM CLEARING UTILITIES (WIPES SENSITIVE BANK & FORM FIELDS)
+   PNR ENQUIRY FUNCTIONALITY
+   ========================================================================== */
+function initPnrEnquiry() {
+  const form = document.getElementById('pnr-search-form');
+  const input = document.getElementById('pnr-query-input');
+
+  form?.addEventListener('submit', handlePnrSubmit);
+
+  document.querySelectorAll('.chip-pnr-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pnr = btn.getAttribute('data-pnr');
+      if (input) input.value = pnr;
+      executePnrLookup(pnr);
+    });
+  });
+}
+
+function handlePnrSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('pnr-query-input');
+  const pnr = input.value.trim();
+
+  if (!pnr || pnr.replace(/[^0-9]/g, '').length < 10) {
+    showToast('Please enter a valid 10-digit PNR Number.');
+    input.focus();
+    return;
+  }
+
+  executePnrLookup(pnr);
+}
+
+function executePnrLookup(pnr) {
+  const container = document.getElementById('pnr-result-container');
+  if (!container) return;
+
+  triggerTopProgress(500, () => {
+    const booking = findBookingByPnr(pnr);
+    if (!booking) {
+      renderPnrNotFound(pnr);
+    } else {
+      renderPnrResult(booking);
+    }
+  });
+}
+
+function renderPnrNotFound(pnr) {
+  const container = document.getElementById('pnr-result-container');
+  container.innerHTML = `
+    <div class="pnr-not-found-card">
+      <div class="pnr-not-found-icon">⚠️</div>
+      <div class="pnr-not-found-title">PNR Record Not Found</div>
+      <div class="pnr-not-found-desc">
+        No railway reservation found for PNR <strong>${pnr}</strong> in the CRIS database. 
+        Please verify the 10-digit number or test with one of the sample PNRs above.
+      </div>
+    </div>
+  `;
+  container.style.display = 'block';
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderPnrResult(booking) {
+  const container = document.getElementById('pnr-result-container');
+
+  let paxRows = '';
+  booking.passengers.forEach((p, idx) => {
+    paxRows += `
+      <tr>
+        <td>#${idx + 1}</td>
+        <td><strong>${p.name}</strong> (${p.age}, ${p.gender.charAt(0)})</td>
+        <td><span class="seat-badge">${p.bookingStatus}</span></td>
+        <td><span class="pnr-status-pill">${p.currentStatus}</span></td>
+        <td>${p.coach || 'B3'} / ${p.berthNumber || '18'} (${p.berthType || p.berthPref || 'LB'})</td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <div class="pnr-status-card">
+      <div class="pnr-card-banner">
+        <div class="pnr-train-hero">
+          <span class="pnr-num-tag">${booking.pnr}</span>
+          <div>
+            <div class="pnr-train-title">${booking.trainNumber} &bull; ${booking.trainName}</div>
+            <div class="pnr-train-sub">${booking.trainType || 'Superfast Express'} | Booked on ${booking.bookingDate || 'Recent'}</div>
+          </div>
+        </div>
+        <div class="pnr-chart-badge ${booking.chartStatus === 'CHART PREPARED' ? 'prepared' : ''}">
+          📊 ${booking.chartStatus}
+        </div>
+      </div>
+
+      <div class="pnr-meta-grid">
+        <div class="pnr-meta-item">
+          <div class="pnr-label">Boarding Station / Time</div>
+          <div class="pnr-val">${booking.fromStation} (${booking.depTime} HRS)</div>
+        </div>
+        <div class="pnr-meta-item">
+          <div class="pnr-label">Destination Station / Time</div>
+          <div class="pnr-val">${booking.toStation} (${booking.arrTime} HRS)</div>
+        </div>
+        <div class="pnr-meta-item">
+          <div class="pnr-label">Journey Date</div>
+          <div class="pnr-val">${booking.journeyDate}</div>
+        </div>
+        <div class="pnr-meta-item">
+          <div class="pnr-label">Class &amp; Quota</div>
+          <div class="pnr-val">${booking.classCode} (${booking.className}) &bull; ${booking.quota}</div>
+        </div>
+      </div>
+
+      <div class="pnr-pax-section">
+        <div class="pnr-section-heading">Passenger Current Status &amp; Berth Allocation</div>
+        <div class="pnr-table-wrap">
+          <table class="pnr-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Passenger Name</th>
+                <th>Booking Status</th>
+                <th>Current Status</th>
+                <th>Coach / Berth Position</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paxRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pnr-footer-row">
+        <div class="pnr-fare-total">
+          Total Fare Paid: <strong>₹${typeof booking.totalFare === 'number' ? booking.totalFare.toFixed(2) : booking.totalFare}</strong> &bull; Txn ID: <code style="color:var(--text-muted);">${booking.txnId}</code>
+        </div>
+        <div class="pnr-actions-group">
+          <button type="button" class="btn-pnr-action" id="btn-pnr-print">🖨️ Print Status</button>
+          <button type="button" class="btn-pnr-action primary" id="btn-pnr-book-new">🚆 Book New Ticket</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.style.display = 'block';
+
+  document.getElementById('btn-pnr-print')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-pnr-book-new')?.addEventListener('click', () => {
+    clearAllForms();
+    switchView('search');
+  });
+
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ==========================================================================
+   FORM CLEARING UTILITIES
    ========================================================================== */
 function clearPaymentForms() {
-  // Clear payment fields
   const cardNum = document.getElementById('card-num');
   const cardExp = document.getElementById('card-exp');
   const cardCvv = document.getElementById('card-cvv');
