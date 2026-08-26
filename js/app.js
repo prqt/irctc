@@ -12,8 +12,8 @@ let regCaptchaCode = '';
 let currentGeneratedOtp = null;
 let currentUser = null;
 
-// Initialize on DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize App Core
+function initApp() {
   // Ensure default fictional account is seeded
   getStoredUsers();
 
@@ -34,9 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initLoginForm();
   initRegisterForm();
 
-  // Initialize Ticket Booking System
+  // Initialize Ticket Booking System & Station Autocomplete
   initBookingEngine();
-});
+}
+
+// Safely initialize whether DOM is already parsed or still loading
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 /* ==========================================================================
    CAPTCHA GENERATOR (Canvas Based)

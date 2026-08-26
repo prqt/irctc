@@ -10,8 +10,37 @@
  */
 
 import { searchStations, populateStationDatalist } from './stations.js';
-import { openModal } from './app.js';
 import { getStoredBookings, saveBooking, findBookingByPnr } from './supabase.js';
+
+// Current Booking Session State (declared at top to eliminate TDZ issues)
+export const bookingState = {
+  search: {
+    from: '',
+    to: '',
+    date: new Date().toISOString().split('T')[0],
+    class: 'ALL',
+    quota: 'GENERAL'
+  },
+  selectedTrain: null,
+  selectedClass: null,
+  passengers: [],
+  contact: {
+    email: '',
+    mobile: ''
+  },
+  pricing: {
+    baseFare: 0,
+    irctcFee: 17.70,
+    gst: 0,
+    total: 0
+  },
+  isHumanVerified: false,
+  ticket: null
+};
+
+// Date picker internal state
+let calCurrentMonth = new Date().getMonth();
+let calCurrentYear = new Date().getFullYear();
 
 // Available Mock Trains Database
 export const TRAINS_DATA = [
@@ -95,36 +124,6 @@ export const TRAINS_DATA = [
     ]
   }
 ];
-
-// Current Booking Session State
-export const bookingState = {
-  search: {
-    from: '',
-    to: '',
-    date: new Date().toISOString().split('T')[0],
-    class: 'ALL',
-    quota: 'GENERAL'
-  },
-  selectedTrain: null,
-  selectedClass: null,
-  passengers: [],
-  contact: {
-    email: '',
-    mobile: ''
-  },
-  pricing: {
-    baseFare: 0,
-    irctcFee: 17.70,
-    gst: 0,
-    total: 0
-  },
-  isHumanVerified: false,
-  ticket: null
-};
-
-// Date picker internal state
-let calCurrentMonth = new Date().getMonth();
-let calCurrentYear = new Date().getFullYear();
 
 // DOM Initializer
 export function initBookingEngine() {
@@ -518,7 +517,7 @@ function handleSearchSubmit(e) {
   const activeSession = localStorage.getItem('irctc_active_session');
   if (!activeSession) {
     showToast('🔒 IRCTC Login Required to search and reserve train tickets.');
-    openModal('login');
+    document.getElementById('open-auth-btn')?.click();
     return;
   }
 
@@ -1538,8 +1537,8 @@ function handlePaymentSubmit(e) {
     submitButton.textContent = 'PROCESSING PAYMENT…';
   }
 
-  triggerTopProgress(800, () => {
-    generateConfirmedTicket();
+  triggerTopProgress(800, async () => {
+    await generateConfirmedTicket();
     clearPaymentForms();
     switchView('ticket');
     if (submitButton) {
@@ -1553,7 +1552,7 @@ function handlePaymentSubmit(e) {
 /* ==========================================================================
    STEP 6: TICKET GENERATION & DATABASE PERSISTENCE
    ========================================================================== */
-function generateConfirmedTicket() {
+async function generateConfirmedTicket() {
   const pnr = generatePnr();
   const txnId = `IRCTC${Math.floor(10000000 + Math.random() * 90000000)}`;
   const classCode = bookingState.selectedClass ? bookingState.selectedClass.code : '3A';
