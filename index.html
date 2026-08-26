@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="css/style.css">
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
@@ -88,10 +90,10 @@
         <div class="card-head with-tabs">
           <div class="card-nav-tabs">
             <button type="button" class="card-tab-btn active" id="tab-mode-search">
-              <span>🚆</span> Search Trains
+              <i data-lucide="train" style="width:15px;height:15px;vertical-align:middle;"></i> Search Trains
             </button>
             <button type="button" class="card-tab-btn" id="tab-mode-pnr">
-              <span>🎫</span> PNR Status
+              <i data-lucide="ticket" style="width:15px;height:15px;vertical-align:middle;"></i> PNR Status
             </button>
           </div>
           <span class="card-tag">CRIS CONNECTED</span>
@@ -105,7 +107,7 @@
             <div class="input-block flex-1 station-picker-box">
               <label for="search-from">From Station *</label>
               <div class="station-input-wrap">
-                <span class="input-prefix-icon">📍</span>
+                <span class="input-prefix-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></span>
                 <input type="text" id="search-from" placeholder="Enter station name or code" required autocomplete="off"
                   value="">
                 <button type="button" class="btn-clear-input" id="btn-clear-from" style="display: none;"
@@ -124,7 +126,7 @@
             <div class="input-block flex-1 station-picker-box">
               <label for="search-to">To Station *</label>
               <div class="station-input-wrap">
-                <span class="input-prefix-icon">🏁</span>
+                <span class="input-prefix-icon"><i data-lucide="flag" style="width:14px;height:14px;"></i></span>
                 <input type="text" id="search-to" placeholder="Enter station name or code" required autocomplete="off"
                   value="">
                 <button type="button" class="btn-clear-input" id="btn-clear-to" style="display: none;"
@@ -142,7 +144,7 @@
             <div class="input-block date-picker-box">
               <label for="search-date-display">Journey Date *</label>
               <div class="date-input-wrap" id="date-input-trigger">
-                <span class="input-prefix-icon">📅</span>
+                <span class="input-prefix-icon"><i data-lucide="calendar" style="width:14px;height:14px;"></i></span>
                 <input type="text" id="search-date-display" placeholder="Select Journey Date" readonly required>
                 <input type="hidden" id="search-date" name="journey_date">
               </div>
@@ -192,10 +194,10 @@
         <div class="card-head with-tabs">
           <div class="card-nav-tabs">
             <button type="button" class="card-tab-btn" id="pnr-tab-mode-search">
-              <span>🚆</span> Search Trains
+              <i data-lucide="train" style="width:15px;height:15px;vertical-align:middle;"></i> Search Trains
             </button>
             <button type="button" class="card-tab-btn active" id="pnr-tab-mode-pnr">
-              <span>🎫</span> PNR Status
+              <i data-lucide="ticket" style="width:15px;height:15px;vertical-align:middle;"></i> PNR Status
             </button>
           </div>
           <span class="card-tag">CRIS LIVE PNR</span>
@@ -643,7 +645,7 @@
           <div class="form-footer">
             <div
               style="font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; text-align: center;">
-              💡 <strong>Demo Account:</strong> User ID: <code
+              <i data-lucide="info" style="width:11px;height:11px;vertical-align:middle;"></i> <strong>Demo Account:</strong> User ID: <code
                 style="color:var(--accent-orange); font-weight:600;">pratham</code> | Password: <code
                 style="color:var(--accent-orange); font-weight:600;">Password@123</code>
             </div>

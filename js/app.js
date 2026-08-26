@@ -36,6 +36,11 @@ function initApp() {
 
   // Initialize Ticket Booking System & Station Autocomplete
   initBookingEngine();
+
+  // Initialize Lucide Icons
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
 }
 
 // Safely initialize whether DOM is already parsed or still loading

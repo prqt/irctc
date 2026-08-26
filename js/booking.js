@@ -516,7 +516,7 @@ function handleSearchSubmit(e) {
 
   const activeSession = localStorage.getItem('irctc_active_session');
   if (!activeSession) {
-    showToast('🔒 IRCTC Login Required to search and reserve train tickets.');
+    showToast('IRCTC Login Required to search and reserve train tickets.');
     document.getElementById('open-auth-btn')?.click();
     return;
   }
@@ -636,7 +636,7 @@ function renderTrainsList() {
         if (actionBox) {
           actionBox.innerHTML = `
             <button type="button" class="btn-check-avail" id="btn-avail-${trainNum}">
-              <span>🔍</span> Check Availability &amp; Book ${classCode} (₹${fare}) &rarr;
+              Check Availability
             </button>
           `;
           actionBox.style.display = 'flex';
@@ -1396,7 +1396,7 @@ function initFreehandTear() {
         payBtn.classList.remove('disabled');
         payBtn.textContent = `PROCEED TO PAYMENT (₹${bookingState.pricing.total.toFixed(2)}) →`;
       }
-      showToast('✔ Tear accepted. Human verification complete.');
+      showToast('Tear accepted. Human verification complete.');
     }, 250);
   }
 
@@ -1454,7 +1454,7 @@ function resetFreehandTear() {
   if (payBtn) {
     payBtn.disabled = true;
     payBtn.classList.add('disabled');
-    payBtn.textContent = '🔒 TEAR TO UNLOCK PAYMENT';
+    payBtn.textContent = 'TEAR TO UNLOCK PAYMENT';
   }
 }
 
@@ -1758,7 +1758,7 @@ function renderPnrNotFound(pnr) {
   const container = document.getElementById('pnr-result-container');
   container.innerHTML = `
     <div class="pnr-not-found-card">
-      <div class="pnr-not-found-icon">⚠️</div>
+      <div class="pnr-not-found-icon"><i data-lucide="alert-triangle" style="width:32px;height:32px;"></i></div>
       <div class="pnr-not-found-title">PNR Record Not Found</div>
       <div class="pnr-not-found-desc">
         No railway reservation found for PNR <strong>${pnr}</strong> in the CRIS database. 
@@ -1767,6 +1767,7 @@ function renderPnrNotFound(pnr) {
     </div>
   `;
   container.style.display = 'block';
+  if (window.lucide) window.lucide.createIcons();
   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -1797,7 +1798,7 @@ function renderPnrResult(booking) {
           </div>
         </div>
         <div class="pnr-chart-badge ${booking.chartStatus === 'CHART PREPARED' ? 'prepared' : ''}">
-          📊 ${booking.chartStatus}
+          <i data-lucide="bar-chart-2" style="width:12px;height:12px;vertical-align:middle;"></i> ${booking.chartStatus}
         </div>
       </div>
 
@@ -1845,8 +1846,8 @@ function renderPnrResult(booking) {
           Total Fare Paid: <strong>₹${typeof booking.totalFare === 'number' ? booking.totalFare.toFixed(2) : booking.totalFare}</strong> &bull; Txn ID: <code style="color:var(--text-muted);">${booking.txnId}</code>
         </div>
         <div class="pnr-actions-group">
-          <button type="button" class="btn-pnr-action" id="btn-pnr-print">🖨️ Print Status</button>
-          <button type="button" class="btn-pnr-action primary" id="btn-pnr-book-new">🚆 Book New Ticket</button>
+          <button type="button" class="btn-pnr-action" id="btn-pnr-print"><i data-lucide="printer" style="width:13px;height:13px;vertical-align:middle;"></i> Print Status</button>
+          <button type="button" class="btn-pnr-action primary" id="btn-pnr-book-new"><i data-lucide="train" style="width:13px;height:13px;vertical-align:middle;"></i> Book New Ticket</button>
         </div>
       </div>
     </div>
@@ -1860,6 +1861,7 @@ function renderPnrResult(booking) {
     switchView('search');
   });
 
+  if (window.lucide) window.lucide.createIcons();
   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
