@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IRCTC — Next Gen Rail Experience</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='16' height='13' rx='2'/><path d='M4 11h16'/><path d='M12 3v8'/><path d='M8 19l-2 3'/><path d='M18 22l-2-3'/><path d='M8 16l-2 3'/><path d='M16 16l2 3'/></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='16' height='13' rx='2'/><path d='M4 11h16'/><path d='M12 3v8'/><path d='M8 19l-2 3'/><path d='M18 22l-2-3'/><path d='M8 16l-2 3'/><path d='M16 16l2 3'/></svg>">
   <link rel="stylesheet" href="css/style.css">
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -26,8 +27,9 @@
       <!-- Left: Enlarged IRCTC Dual Logo -->
       <div class="notch-left">
         <a href="#" class="logo-link" id="nav-home-btn">
-          <img src="https://www.irctc.co.in/eticket/assets-new/header.svg" alt="IRCTC & Indian Railways"
-            class="irctc-dual-logo" onerror="this.parentElement.classList.add('logo-fallback-active')" />
+          <img src="https://1000logos.net/wp-content/uploads/2022/02/IRCTC-logo-1536x864.png"
+            alt="IRCTC & Indian Railways" class="irctc-dual-logo"
+            onerror="this.parentElement.classList.add('logo-fallback-active')" />
           <div class="logo-fallback">
             <span class="logo-badge">IRCTC</span>
             <span class="logo-divider"></span>
@@ -209,8 +211,8 @@
               <label for="pnr-query-input">Enter 10-Digit PNR Number *</label>
               <div class="pnr-input-wrapper">
                 <span class="pnr-hash-icon">#</span>
-                <input type="text" id="pnr-query-input" placeholder="Enter 10-digit PNR Number" maxlength="12"
-                  required autocomplete="off">
+                <input type="text" id="pnr-query-input" placeholder="Enter 10-digit PNR Number" maxlength="12" required
+                  autocomplete="off">
                 <button type="submit" class="btn-pnr-submit" id="btn-submit-pnr">
                   GET STATUS &rarr;
                 </button>
@@ -353,28 +355,28 @@
 
             <!-- The interaction zone includes a small area above the ticket for a natural tear start. -->
             <div class="tear-interaction-zone" id="tear-interaction-zone">
-            <div class="tearable-pass-box" id="tearable-pass-box">
-              <div class="pass-main-side">
-                <div class="pass-tag">IRCTC GATE PASS</div>
-                <div class="pass-code" id="pass-temp-pnr">BOOKING MANIFEST</div>
-                <div class="pass-route" id="pass-route-text">NDLS &rarr; MMCT</div>
+              <div class="tearable-pass-box" id="tearable-pass-box">
+                <div class="pass-main-side">
+                  <div class="pass-tag">IRCTC GATE PASS</div>
+                  <div class="pass-code" id="pass-temp-pnr">BOOKING MANIFEST</div>
+                  <div class="pass-route" id="pass-route-text">NDLS &rarr; MMCT</div>
 
-                <!-- Unlocked badge that appears upon tear -->
-                <div class="tear-success-stamp" id="tear-success-stamp">
-                  <div class="stamp-check-icon">&#x2714;</div>
-                  <div class="stamp-verified-text">HUMAN VERIFIED</div>
-                  <div class="stamp-gate-text">GATE UNLOCKED</div>
+                  <!-- Unlocked badge that appears upon tear -->
+                  <div class="tear-success-stamp" id="tear-success-stamp">
+                    <div class="stamp-check-icon">&#x2714;</div>
+                    <div class="stamp-verified-text">HUMAN VERIFIED</div>
+                    <div class="stamp-gate-text">GATE UNLOCKED</div>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Right Tearable Drop Stub -->
-              <div class="pass-stub-side" id="pass-stub-side">
-                <div class="stub-micro-barcodes"></div>
-                <span class="stub-serial">CRIS-2026</span>
+                <!-- Right Tearable Drop Stub -->
+                <div class="pass-stub-side" id="pass-stub-side">
+                  <div class="stub-micro-barcodes"></div>
+                  <span class="stub-serial">CRIS-2026</span>
+                </div>
+                <div class="tear-guide" aria-hidden="true"></div>
               </div>
-              <div class="tear-guide" aria-hidden="true"></div>
-            </div>
-            <canvas class="tear-trajectory-layer" id="tear-trajectory-canvas" aria-hidden="true"></canvas>
+              <canvas class="tear-trajectory-layer" id="tear-trajectory-canvas" aria-hidden="true"></canvas>
             </div>
 
             <p class="detector-status" id="detector-status" role="status">Loading trajectory detector…</p>
@@ -385,17 +387,22 @@
               </button>
             </div>
 
-            <div class="tear-preview-modal" id="tear-preview-modal" role="dialog" aria-modal="true" aria-labelledby="tear-preview-title" hidden>
+            <div class="tear-preview-modal" id="tear-preview-modal" role="dialog" aria-modal="true"
+              aria-labelledby="tear-preview-title" hidden>
               <div class="tear-preview-card">
                 <span class="verify-badge">QUICK PREVIEW</span>
                 <h3 id="tear-preview-title">Tear naturally, in one motion</h3>
                 <div class="tear-preview-demo" aria-hidden="true">
                   <div class="preview-hand">✦</div>
                   <div class="preview-ticket"></div>
-                  <svg viewBox="0 0 280 150"><path d="M 182 12 C 158 44, 211 72, 178 148"></path></svg>
+                  <svg viewBox="0 0 280 150">
+                    <path d="M 182 12 C 158 44, 211 72, 178 148"></path>
+                  </svg>
                 </div>
-                <p>Begin just above the ticket and tear downward on the right side. Make one open line from top to bottom—loops cannot be accepted.</p>
-                <button type="button" class="btn-primary-action full-width" id="btn-close-tear-preview">OK, GOT IT</button>
+                <p>Begin just above the ticket and tear downward on the right side. Make one open line from top to
+                  bottom—loops cannot be accepted.</p>
+                <button type="button" class="btn-primary-action full-width" id="btn-close-tear-preview">OK, GOT
+                  IT</button>
               </div>
             </div>
           </div>
@@ -645,9 +652,9 @@
           <div class="form-footer">
             <div
               style="font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; text-align: center;">
-              <i data-lucide="info" style="width:11px;height:11px;vertical-align:middle;"></i> <strong>Demo Account:</strong> User ID: <code
-                style="color:var(--accent-orange); font-weight:600;">pratham</code> | Password: <code
-                style="color:var(--accent-orange); font-weight:600;">Password@123</code>
+              <i data-lucide="info" style="width:11px;height:11px;vertical-align:middle;"></i> <strong>Demo
+                Account:</strong> User ID: <code style="color:var(--accent-orange); font-weight:600;">pratham</code> |
+              Password: <code style="color:var(--accent-orange); font-weight:600;">Password@123</code>
             </div>
             <p>New to IRCTC? <a href="#" id="switch-to-register">Register an account</a></p>
           </div>
