@@ -1040,19 +1040,235 @@ function initFreehandTear() {
     return '';
   };
 
-  const showFallingPiece = () => {
-    const top = ticketTop();
-    const bounds = pass.getBoundingClientRect();
-    const tear = points.map(point => ({
-      x: Math.max(0, Math.min(bounds.width, point.x)),
-      y: Math.max(0, Math.min(bounds.height, point.y - top))
-    }));
-    tear[0].y = 0;
-    tear[tear.length - 1].y = bounds.height;
-    const leftShape = [[0, 0], ...tear, [0, bounds.height]].map(point => `${point.x}px ${point.y}px`).join(', ');
-    const rightShape = [...tear, [bounds.width, bounds.height], [bounds.width, 0]].map(point => `${point.x}px ${point.y}px`).join(', ');
-    pass.style.clipPath = `polygon(${leftShape})`;
+  let activePhysicsAnimation = null;
 
+  const stopActivePhysics = () => {
+    if (activePhysicsAnimation) {
+      if (activePhysicsAnimation.rafId) {
+        cancelAnimationFrame(activePhysicsAnimation.rafId);
+      }
+      if (activePhysicsAnimation.pieceEl) {
+        activePhysicsAnimation.pieceEl.remove();
+      }
+      if (activePhysicsAnimation.engine && window.Matter) {
+        window.Matter.World.clear(activePhysicsAnimation.engine.world, false);
+        window.Matter.Engine.clear(activePhysicsAnimation.engine);
+      }
+      activePhysicsAnimation = null;
+    }
+  };
+
+  const splitTicketWithPaper = (localPoints, W, H) => {
+    if (typeof window.paper !== 'undefined') {
+      try {
+        const scope = new window.paper.PaperScope();
+        const canvasEl = document.createElement('canvas');
+        canvasEl.width = W;
+        canvasEl.height = H;
+        scope.setup(canvasEl);
+
+        const ticketRect = new scope.Path.Rectangle({
+          point: [0, 0],
+          size: [W, H]
+        });
+
+        const p0 = localPoints[0] || { x: W * 0.75, y: 0 };
+        const pLast = localPoints[localPoints.length - 1] || { x: W * 0.75, y: H };
+
+        // Create the tear path extending slightly above & below bounds so intersection is clean
+        const tearPath = new scope.Path();
+        tearPath.add(new scope.Point(p0.x, -25));
+        localPoints.forEach(pt => {
+          tearPath.add(new scope.Point(pt.x, pt.y));
+        });
+        tearPath.add(new scope.Point(pLast.x, H + 25));
+        tearPath.simplify(1.2);
+
+        // Build right cutting polygon (tear line + right bounding boundary)
+        const rightCutter = new scope.Path();
+        tearPath.segments.forEach(seg => rightCutter.add(seg.point));
+        rightCutter.add(new scope.Point(W + 60, H + 60));
+        rightCutter.add(new scope.Point(W + 60, -60));
+        rightCutter.closePath();
+
+        // Perform boolean operations to dynamically carve both regions
+        const rightPath = ticketRect.intersect(rightCutter);
+        const leftPath = ticketRect.subtract(rightCutter);
+
+        const extractVertices = (paperPath) => {
+          if (!paperPath) return null;
+          let target = paperPath;
+          if (paperPath instanceof scope.CompoundPath && paperPath.children && paperPath.children.length > 0) {
+            target = paperPath.children.reduce((prev, curr) => Math.abs(curr.area) > Math.abs(prev.area) ? curr : prev, paperPath.children[0]);
+          }
+          if (!target || !target.segments || target.segments.length < 3) return null;
+
+          const flattened = target.clone();
+          flattened.flatten(3);
+          const verts = flattened.segments.map(s => ({
+            x: Math.round(s.point.x * 10) / 10,
+            y: Math.round(s.point.y * 10) / 10
+          }));
+          flattened.remove();
+          return verts;
+        };
+
+        const leftVerts = extractVertices(leftPath);
+        const rightVerts = extractVertices(rightPath);
+
+        if (leftVerts && rightVerts && leftVerts.length >= 3 && rightVerts.length >= 3) {
+          return { leftVerts, rightVerts };
+        }
+      } catch (err) {
+        console.warn('Paper.js boolean split notice, using robust geometry fallback:', err);
+      }
+    }
+
+    // Fallback polygon generation along tear path
+    const tear = localPoints.map(p => ({
+      x: Math.max(0, Math.min(W, p.x)),
+      y: Math.max(0, Math.min(H, p.y))
+    }));
+    if (tear.length > 0) {
+      tear[0].y = 0;
+      tear[tear.length - 1].y = H;
+    }
+    return {
+      leftVerts: [{ x: 0, y: 0 }, ...tear, { x: 0, y: H }],
+      rightVerts: [...tear, { x: W, y: H }, { x: W, y: 0 }]
+    };
+  };
+
+  const startPaperPhysics = (pieceEl, vertices, W, H) => {
+    if (typeof window.decomp !== 'undefined' && window.Matter && window.Matter.Common) {
+      window.Matter.Common.setDecomp(window.decomp);
+    }
+
+    const minX = Math.min(...vertices.map(v => v.x));
+    const maxX = Math.max(...vertices.map(v => v.x));
+    const minY = Math.min(...vertices.map(v => v.y));
+    const maxY = Math.max(...vertices.map(v => v.y));
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+
+    if (!window.Matter) {
+      // Fallback CSS animation if Matter.js is unavailable
+      pieceEl.style.transition = 'transform 1.1s cubic-bezier(.25,.75,.45,1), opacity 0.8s ease-in 0.3s';
+      requestAnimationFrame(() => {
+        pieceEl.style.transform = 'translate3d(40px, 280px, 0) rotate(24deg)';
+        pieceEl.style.opacity = '0';
+      });
+      setTimeout(() => pieceEl.remove(), 1200);
+      return;
+    }
+
+    const engine = window.Matter.Engine.create({
+      gravity: { x: 0, y: 1.05, scale: 0.001 }
+    });
+
+    const matterVerts = vertices.map(v => ({ x: v.x, y: v.y }));
+    let body;
+    try {
+      body = window.Matter.Bodies.fromVertices(midX, midY, [matterVerts], {
+        density: 0.0012,
+        restitution: 0.18,
+        friction: 0.1,
+        frictionAir: 0.045
+      });
+    } catch (e) {
+      console.warn('Matter Bodies.fromVertices warning:', e);
+    }
+
+    if (!body) {
+      body = window.Matter.Bodies.rectangle(midX, midY, Math.max(24, maxX - minX), Math.max(24, maxY - minY), {
+        density: 0.0012,
+        restitution: 0.18,
+        friction: 0.1,
+        frictionAir: 0.045
+      });
+    }
+
+    const originX = body.position.x;
+    const originY = body.position.y;
+
+    pieceEl.style.transformOrigin = `${originX}px ${originY}px`;
+
+    window.Matter.World.add(engine.world, [body]);
+
+    // Initial forward momentum & rotational release impulse
+    window.Matter.Body.setVelocity(body, {
+      x: 2.2 + Math.random() * 1.4,
+      y: 0.4
+    });
+    window.Matter.Body.setAngularVelocity(body, 0.038 + (Math.random() - 0.5) * 0.02);
+
+    const startTime = performance.now();
+    let lastTime = startTime;
+    let frameCount = 0;
+
+    function physicsLoop(now) {
+      const dt = Math.min(32, now - lastTime);
+      lastTime = now;
+      frameCount++;
+
+      window.Matter.Engine.update(engine, dt);
+
+      const dx = body.position.x - originX;
+      const dy = body.position.y - originY;
+      const angle = body.angle;
+
+      // Realistic aerodynamic paper sway and flutter
+      const flutter = Math.sin(frameCount * 0.14) * Math.min(0.08, dy * 0.0004);
+      const sway = Math.cos(frameCount * 0.11) * Math.min(6, dy * 0.02);
+
+      pieceEl.style.transform = `translate3d(${dx + sway}px, ${dy}px, 0) rotate(${angle + flutter}rad)`;
+
+      if (dy > 170) {
+        const fade = Math.max(0, 1 - (dy - 170) / 190);
+        pieceEl.style.opacity = fade.toFixed(2);
+      }
+
+      if (dy > 380 || now - startTime > 3200 || parseFloat(pieceEl.style.opacity) <= 0.02) {
+        stopActivePhysics();
+        return;
+      }
+
+      if (activePhysicsAnimation) {
+        activePhysicsAnimation.rafId = requestAnimationFrame(physicsLoop);
+      }
+    }
+
+    activePhysicsAnimation = {
+      rafId: requestAnimationFrame(physicsLoop),
+      engine,
+      pieceEl
+    };
+  };
+
+  const showFallingPiece = () => {
+    stopActivePhysics();
+
+    const bounds = pass.getBoundingClientRect();
+    const zoneBounds = interactionZone.getBoundingClientRect();
+    const top = ticketTop();
+    const left = bounds.left - zoneBounds.left;
+    const W = bounds.width;
+    const H = bounds.height;
+
+    const localPoints = points.map(p => ({
+      x: p.x - left,
+      y: p.y - top
+    }));
+
+    const { leftVerts, rightVerts } = splitTicketWithPaper(localPoints, W, H);
+
+    const leftPolygonCSS = 'polygon(' + leftVerts.map(p => `${p.x}px ${p.y}px`).join(', ') + ')';
+    const rightPolygonCSS = 'polygon(' + rightVerts.map(p => `${p.x}px ${p.y}px`).join(', ') + ')';
+
+    // Fixed left piece keeps left geometry
+    pass.style.clipPath = leftPolygonCSS;
+
+    // Cloned right piece with right geometry falls via physics
     const oldPiece = interactionZone.querySelector('.torn-ticket-piece');
     oldPiece?.remove();
     const piece = pass.cloneNode(true);
@@ -1060,10 +1276,14 @@ function initFreehandTear() {
     piece.classList.add('torn-ticket-piece');
     piece.querySelector('#tear-success-stamp')?.remove();
     piece.querySelector('#pass-stub-side')?.removeAttribute('id');
-    piece.style.clipPath = `polygon(${rightShape})`;
+    piece.style.clipPath = rightPolygonCSS;
     piece.style.top = `${top}px`;
+    piece.style.left = `${left}px`;
+    piece.style.transform = 'none';
+    piece.style.opacity = '1';
     interactionZone.appendChild(piece);
-    requestAnimationFrame(() => piece.classList.add('falling'));
+
+    startPaperPhysics(piece, rightVerts, W, H);
   };
 
   const clearTrajectory = () => {
@@ -1166,7 +1386,6 @@ function initFreehandTear() {
     updateStatus(`Human confidence ${(humanConfidence * 100).toFixed(1)}% · Bot confidence ${(botConfidence * 100).toFixed(1)}%`, 'verified');
     pass.classList.add('torn');
     showFallingPiece();
-    // The cloned, clipped ticket piece contains every pixel to the right of the tear and falls as one unit.
 
     setTimeout(() => {
       const successStamp = document.getElementById('tear-success-stamp');
@@ -1217,6 +1436,7 @@ function resetFreehandTear() {
     pass.classList.remove('torn');
     pass.style.clipPath = '';
   }
+  stopActivePhysics();
   document.querySelector('.torn-ticket-piece')?.remove();
   if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
   if (stub) {
