@@ -1,9 +1,9 @@
 /**
  * Supabase Client Initialization, User Account Storage & PNR Booking Database
- * Configured with Supabase API Key and Local Storage Fallback
+ * Real Cloud Database Synchronization with Local Storage Fallback & Caching
  */
 
-// Replace SUPABASE_URL with your Supabase Project URL from the Supabase Dashboard
+// Supabase Project Configuration
 export const SUPABASE_URL = window.ENV_SUPABASE_URL || 'https://whxqwxbxpugskfufshdb.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_GiMSfFe-T2zy6Ix3T_MGmA_hOsIZUJX';
 
@@ -13,16 +13,16 @@ export let supabase = null;
 if (window.supabase) {
   try {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('[Supabase] Initialized successfully');
+    console.log('[Supabase Cloud DB] Client connected successfully');
   } catch (err) {
-    console.warn('[Supabase] Initialization pending Project URL setup:', err.message);
+    console.warn('[Supabase Cloud DB] Initialization notice:', err.message);
   }
 } else {
-  console.warn('[Supabase] CDN script not loaded or unavailable offline.');
+  console.warn('[Supabase Cloud DB] CDN client not loaded.');
 }
 
 /**
- * Default Seeded Fictional User Account for Testing & Demo
+ * Default Seeded User Account for Testing & Auth Demo
  */
 export const FICTIONAL_ACCOUNT = {
   username: 'pratham',
@@ -48,93 +48,7 @@ export const FICTIONAL_ACCOUNT = {
 };
 
 /**
- * Default Pre-Seeded Sample Bookings for Instant PNR Verification
- */
-export const SAMPLE_BOOKINGS = [
-  {
-    pnr: '245-8910432',
-    txnId: 'IRCTC98271043',
-    bookingDate: '24 Aug 2026',
-    journeyDate: '26 Aug 2026',
-    trainNumber: '22436',
-    trainName: 'VANDE BHARAT EXP',
-    trainType: 'Superfast / Vande Bharat',
-    fromStation: 'NDLS - New Delhi (Delhi)',
-    toStation: 'BSB - Varanasi Junction (Uttar Pradesh)',
-    depTime: '06:00',
-    arrTime: '14:00',
-    duration: '08h 00m',
-    classCode: 'EC',
-    className: 'Exec Chair Car',
-    quota: 'GENERAL',
-    chartStatus: 'CHART NOT PREPARED',
-    totalFare: 2437.70,
-    contact: { email: 'pratham@irctc.co.in', mobile: '9876543210' },
-    passengers: [
-      {
-        name: 'PRATHAM USER',
-        age: 26,
-        gender: 'Male',
-        berthPref: 'Window Side',
-        food: 'Veg',
-        bookingStatus: 'CNF / E1 / 14 / WS',
-        currentStatus: 'CNF / CONFIRMED',
-        coach: 'E1',
-        berthNumber: '14',
-        berthType: 'Window Side (WS)'
-      }
-    ]
-  },
-  {
-    pnr: '412-9083125',
-    txnId: 'IRCTC83920194',
-    bookingDate: '23 Aug 2026',
-    journeyDate: '27 Aug 2026',
-    trainNumber: '12952',
-    trainName: 'MUMBAI RAJDHANI EXP',
-    trainType: 'Rajdhani Express',
-    fromStation: 'NDLS - New Delhi (Delhi)',
-    toStation: 'MMCT - Mumbai Central (Maharashtra)',
-    depTime: '16:55',
-    arrTime: '08:35',
-    duration: '15h 40m',
-    classCode: '3A',
-    className: 'AC 3 Tier',
-    quota: 'GENERAL',
-    chartStatus: 'CHART NOT PREPARED',
-    totalFare: 3977.70,
-    contact: { email: 'pratham@irctc.co.in', mobile: '9876543210' },
-    passengers: [
-      {
-        name: 'PRATHAM USER',
-        age: 26,
-        gender: 'Male',
-        berthPref: 'Lower Berth',
-        food: 'Veg',
-        bookingStatus: 'CNF / B3 / 18 / LB',
-        currentStatus: 'CNF / CONFIRMED',
-        coach: 'B3',
-        berthNumber: '18',
-        berthType: 'Lower Berth (LB)'
-      },
-      {
-        name: 'ANANYA SHARMA',
-        age: 25,
-        gender: 'Female',
-        berthPref: 'Middle Berth',
-        food: 'Veg',
-        bookingStatus: 'CNF / B3 / 19 / MB',
-        currentStatus: 'CNF / CONFIRMED',
-        coach: 'B3',
-        berthNumber: '19',
-        berthType: 'Middle Berth (MB)'
-      }
-    ]
-  }
-];
-
-/**
- * Retrieve Stored Users from localStorage with seeded default
+ * Retrieve Stored Users from localStorage
  */
 export function getStoredUsers() {
   const users = localStorage.getItem('irctc_registered_users');
@@ -162,82 +76,155 @@ export function getStoredUsers() {
 }
 
 /**
- * Save New User to LocalStorage and optionally sync to Supabase
+ * Save New User to LocalStorage and sync to Cloud
  */
-export function saveUser(user) {
+export async function saveUser(user) {
   const users = getStoredUsers();
   users.push(user);
   localStorage.setItem('irctc_registered_users', JSON.stringify(users));
 
-  // Asynchronously attempt to sync to Supabase if available
   if (supabase) {
     try {
-      supabase.from('users').insert([user]).then(({ error }) => {
-        if (error) console.log('[Supabase Sync Info]', error.message);
-      }).catch((e) => console.log('[Supabase Sync Info]', e));
+      await supabase.from('users').insert([user]);
     } catch (e) {
-      // Non-blocking
+      console.warn('[Supabase User Sync Notice]', e.message || e);
     }
   }
 }
 
 /**
- * Retrieve Stored PNR Bookings
+ * Retrieve Locally Cached PNR Bookings
  */
 export function getStoredBookings() {
   const data = localStorage.getItem('irctc_all_bookings');
   if (!data) {
-    localStorage.setItem('irctc_all_bookings', JSON.stringify(SAMPLE_BOOKINGS));
-    return SAMPLE_BOOKINGS;
+    return [];
   }
   try {
     const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed)) {
-      localStorage.setItem('irctc_all_bookings', JSON.stringify(SAMPLE_BOOKINGS));
-      return SAMPLE_BOOKINGS;
-    }
-    // Ensure sample bookings exist
-    SAMPLE_BOOKINGS.forEach(sb => {
-      if (!parsed.some(b => b.pnr === sb.pnr)) {
-        parsed.push(sb);
-      }
-    });
-    return parsed;
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    return SAMPLE_BOOKINGS;
+    return [];
   }
 }
 
 /**
- * Save New Booking with PNR
+ * Save / Cache a Booking Locally
  */
-export function saveBooking(booking) {
+export function cacheBookingLocally(booking) {
+  if (!booking || !booking.pnr) return;
   const list = getStoredBookings();
-  list.unshift(booking); // newest first
+  const cleanPnr = booking.pnr.replace(/[^0-9]/g, '');
+  const existingIdx = list.findIndex(b => b.pnr.replace(/[^0-9]/g, '') === cleanPnr);
+  if (existingIdx >= 0) {
+    list[existingIdx] = booking;
+  } else {
+    list.unshift(booking);
+  }
   localStorage.setItem('irctc_all_bookings', JSON.stringify(list));
+}
 
-  // Asynchronously attempt to sync to Supabase if available
+/**
+ * Save New Booking to Cloud Database & Local Cache
+ */
+export async function saveBooking(booking) {
+  // 1. Cache locally immediately for instant response
+  cacheBookingLocally(booking);
+
+  // 2. Persist to Supabase Cloud DB so any device can access it
   if (supabase) {
     try {
-      supabase.from('bookings').insert([booking]).then(({ error }) => {
-        if (error) console.log('[Supabase Booking Sync]', error.message);
-      }).catch((e) => console.log('[Supabase Booking Sync]', e));
+      const payload = {
+        pnr: booking.pnr,
+        txn_id: booking.txnId || booking.txn_id,
+        booking_date: booking.bookingDate || booking.booking_date,
+        journey_date: booking.journeyDate || booking.journey_date,
+        train_number: booking.trainNumber || booking.train_number,
+        train_name: booking.trainName || booking.train_name,
+        train_type: booking.trainType || booking.train_type,
+        from_station: booking.fromStation || booking.from_station,
+        to_station: booking.toStation || booking.to_station,
+        dep_time: booking.depTime || booking.dep_time,
+        arr_time: booking.arrTime || booking.arr_time,
+        duration: booking.duration,
+        class_code: booking.classCode || booking.class_code,
+        class_name: booking.className || booking.class_name,
+        quota: booking.quota,
+        chart_status: booking.chartStatus || booking.chart_status || 'CHART NOT PREPARED',
+        total_fare: booking.totalFare || booking.total_fare,
+        contact: booking.contact,
+        passengers: booking.passengers
+      };
+
+      const { data, error } = await supabase.from('bookings').upsert([payload], { onConflict: 'pnr' });
+      if (error) {
+        console.warn('[Supabase Cloud PNR Save Notice]', error.message);
+      } else {
+        console.log('[Supabase Cloud PNR Save] Saved successfully to cloud:', booking.pnr);
+      }
     } catch (e) {
-      // Non-blocking
+      console.warn('[Supabase Cloud PNR Save Notice]', e.message || e);
     }
   }
 }
 
 /**
- * Find Booking by PNR (supports format with or without hyphens)
+ * Find Booking by PNR (Live Cloud Query across devices + Local Cache fallback)
  */
-export function findBookingByPnr(pnrQuery) {
+export async function findBookingByPnr(pnrQuery) {
   if (!pnrQuery) return null;
   const clean = pnrQuery.toString().replace(/[^0-9]/g, '').trim();
+  if (!clean) return null;
+
+  // 1. First, perform live Cloud DB query via Supabase
+  if (supabase) {
+    try {
+      // Query by clean PNR or formatted PNR
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .or(`pnr.eq.${clean},pnr.ilike.%${clean}%`)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const row = data[0];
+        const cloudBooking = {
+          pnr: row.pnr,
+          txnId: row.txn_id || row.txnId,
+          bookingDate: row.booking_date || row.bookingDate,
+          journeyDate: row.journey_date || row.journeyDate,
+          trainNumber: row.train_number || row.trainNumber,
+          trainName: row.train_name || row.trainName,
+          trainType: row.train_type || row.trainType,
+          fromStation: row.from_station || row.fromStation,
+          toStation: row.to_station || row.toStation,
+          depTime: row.dep_time || row.depTime,
+          arrTime: row.arr_time || row.arrTime,
+          duration: row.duration,
+          classCode: row.class_code || row.classCode,
+          className: row.class_name || row.className,
+          quota: row.quota,
+          chartStatus: row.chart_status || row.chartStatus || 'CHART NOT PREPARED',
+          totalFare: Number(row.total_fare || row.totalFare || 0),
+          contact: row.contact,
+          passengers: row.passengers || []
+        };
+
+        // Cache locally for offline and fast re-access
+        cacheBookingLocally(cloudBooking);
+        return cloudBooking;
+      }
+    } catch (err) {
+      console.warn('[Supabase Cloud PNR Query Notice]', err.message || err);
+    }
+  }
+
+  // 2. Fallback to Local Cache if offline or cloud unavailable
   const list = getStoredBookings();
-  
-  return list.find(b => {
-    const bPnrClean = b.pnr.replace(/[^0-9]/g, '').trim();
+  const localMatch = list.find(b => {
+    const bPnrClean = (b.pnr || '').replace(/[^0-9]/g, '').trim();
     return bPnrClean === clean;
-  }) || null;
+  });
+
+  return localMatch || null;
 }

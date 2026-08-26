@@ -964,6 +964,24 @@ function renderPaperBill() {
   if (passRoute) passRoute.textContent = `${fromCode} → ${toCode}`;
 }
 
+let activePhysicsAnimation = null;
+
+const stopActivePhysics = () => {
+  if (activePhysicsAnimation) {
+    if (activePhysicsAnimation.rafId) {
+      cancelAnimationFrame(activePhysicsAnimation.rafId);
+    }
+    if (activePhysicsAnimation.pieceEl) {
+      activePhysicsAnimation.pieceEl.remove();
+    }
+    if (activePhysicsAnimation.engine && window.Matter) {
+      window.Matter.World.clear(activePhysicsAnimation.engine.world, false);
+      window.Matter.Engine.clear(activePhysicsAnimation.engine);
+    }
+    activePhysicsAnimation = null;
+  }
+};
+
 /* ==========================================================================
    HUMAN VERIFICATION: DELBOT FREEHAND TEAR PASS
    ========================================================================== */
@@ -1038,24 +1056,6 @@ function initFreehandTear() {
     }
     if (hasSelfIntersection(points)) return 'Closed or crossing tears cannot be accepted. Please make one open tear.';
     return '';
-  };
-
-  let activePhysicsAnimation = null;
-
-  const stopActivePhysics = () => {
-    if (activePhysicsAnimation) {
-      if (activePhysicsAnimation.rafId) {
-        cancelAnimationFrame(activePhysicsAnimation.rafId);
-      }
-      if (activePhysicsAnimation.pieceEl) {
-        activePhysicsAnimation.pieceEl.remove();
-      }
-      if (activePhysicsAnimation.engine && window.Matter) {
-        window.Matter.World.clear(activePhysicsAnimation.engine.world, false);
-        window.Matter.Engine.clear(activePhysicsAnimation.engine);
-      }
-      activePhysicsAnimation = null;
-    }
   };
 
   const splitTicketWithPaper = (localPoints, W, H) => {
@@ -1658,7 +1658,7 @@ function generateConfirmedTicket() {
       passengers: storedPax
     };
 
-    saveBooking(bookingRecord);
+    await saveBooking(bookingRecord);
   }
 }
 
@@ -1708,17 +1708,7 @@ function copyPnr() {
    ========================================================================== */
 function initPnrEnquiry() {
   const form = document.getElementById('pnr-search-form');
-  const input = document.getElementById('pnr-query-input');
-
   form?.addEventListener('submit', handlePnrSubmit);
-
-  document.querySelectorAll('.chip-pnr-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pnr = btn.getAttribute('data-pnr');
-      if (input) input.value = pnr;
-      executePnrLookup(pnr);
-    });
-  });
 }
 
 function handlePnrSubmit(e) {
@@ -1737,14 +1727,30 @@ function handlePnrSubmit(e) {
 
 function executePnrLookup(pnr) {
   const container = document.getElementById('pnr-result-container');
+  const btn = document.getElementById('btn-submit-pnr');
   if (!container) return;
 
-  triggerTopProgress(500, () => {
-    const booking = findBookingByPnr(pnr);
-    if (!booking) {
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'SEARCHING...';
+  }
+
+  triggerTopProgress(500, async () => {
+    try {
+      const booking = await findBookingByPnr(pnr);
+      if (!booking) {
+        renderPnrNotFound(pnr);
+      } else {
+        renderPnrResult(booking);
+      }
+    } catch (err) {
+      console.error('PNR lookup error:', err);
       renderPnrNotFound(pnr);
-    } else {
-      renderPnrResult(booking);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'GET STATUS &rarr;';
+      }
     }
   });
 }
@@ -1757,7 +1763,7 @@ function renderPnrNotFound(pnr) {
       <div class="pnr-not-found-title">PNR Record Not Found</div>
       <div class="pnr-not-found-desc">
         No railway reservation found for PNR <strong>${pnr}</strong> in the CRIS database. 
-        Please verify the 10-digit number or test with one of the sample PNRs above.
+        Please verify the 10-digit number printed on your ticket or SMS.
       </div>
     </div>
   `;
