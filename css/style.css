@@ -886,7 +886,7 @@ body {
 }
 
 /* ==========================================================================
-   VIEW 4: REVIEW & SWIPE-TO-TEAR HUMAN VERIFICATION
+   VIEW 4: REVIEW & FREEHAND-TEAR HUMAN VERIFICATION
    ========================================================================== */
 .review-layout-grid {
   display: grid;
@@ -1052,14 +1052,16 @@ body {
 
 /* The Tearable Pass Container */
 .tearable-pass-box {
-  background: #09090c;
-  border: 1px solid var(--border-subtle);
+  background-color: #f7f0df;
+  background-image: radial-gradient(rgba(86, 65, 34, 0.13) 0.7px, transparent 0.8px), linear-gradient(105deg, rgba(255,255,255,0.78), rgba(225, 211, 181, 0.38));
+  background-size: 5px 5px, 100% 100%;
+  border: 1px solid #d5c49e;
   border-radius: 14px;
   height: 170px;
   display: flex;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+  overflow: visible;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.55), inset 0 0 26px rgba(119, 83, 31, 0.08);
 }
 
 .pass-main-side {
@@ -1075,94 +1077,114 @@ body {
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.8px;
-  color: var(--text-muted);
+  color: #735c35;
 }
 
 .pass-code {
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 900;
-  color: var(--text-primary);
+  color: #201a12;
 }
 
 .pass-route {
   font-size: 12px;
   font-weight: 800;
-  color: var(--text-secondary);
+  color: #6c5838;
 }
 
-/* Vertical Tear Track & Slider Scissor Thumb */
-.pass-tear-track {
-  width: 28px;
-  background: #060608;
-  border-left: 1.5px dashed #4b5563;
-  border-right: 1.5px dashed #4b5563;
+.tear-interaction-zone {
   position: relative;
-  display: flex;
-  justify-content: center;
-  user-select: none;
+  padding-top: 52px;
+  cursor: crosshair;
+  touch-action: none;
 }
 
-.tear-dotted-visual {
+.tear-interaction-zone:has(.tearable-pass-box.torn) {
+  cursor: default;
+}
+
+.tear-trajectory-layer {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 4px,
-    rgba(255, 255, 255, 0.2) 4px,
-    rgba(255, 255, 255, 0.2) 8px
-  );
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.tear-slider-thumb {
+.tear-trajectory-layer path {
+  fill: none;
+  stroke: #6a4e27;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+}
+
+.tearable-pass-box.torn + .tear-trajectory-layer path {
+  stroke: var(--accent-green);
+}
+
+.tear-preview-modal {
   position: absolute;
-  top: 4px;
-  width: 24px;
-  height: 38px;
-  background: var(--text-primary);
-  color: var(--bg-pure-black);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
-  z-index: 10;
-  transition: transform 0.05s ease;
-  user-select: none;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(5, 5, 8, 0.8);
+  backdrop-filter: blur(6px);
+  border-radius: 18px;
 }
 
-.tear-slider-thumb:active,
-.tear-slider-thumb.dragging {
-  cursor: grabbing;
-  background: #e4e4e7;
-  transform: scale(1.05);
+.tear-preview-modal[hidden] { display: none; }
+
+.tear-preview-card {
+  width: min(100%, 360px);
+  padding: 22px;
+  border: 1px solid var(--border-medium);
+  border-radius: 16px;
+  background: var(--bg-surface-elevated);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+  text-align: center;
 }
 
-.scissor-glyph {
-  font-size: 13px;
-  line-height: 1;
+.tear-preview-card h3 { margin: 4px 0 8px; font-size: 17px; }
+.tear-preview-card p { color: var(--text-secondary); font-size: 12px; line-height: 1.45; margin-bottom: 16px; }
+.tear-preview-demo { height: 168px; position: relative; margin: 10px 0 14px; overflow: hidden; }
+.preview-ticket { position: absolute; left: 30px; right: 30px; top: 42px; bottom: 8px; border-radius: 10px; background: #f7f0df radial-gradient(rgba(86, 65, 34, 0.14) 0.7px, transparent 0.8px); background-size: 5px 5px; box-shadow: 0 9px 20px rgba(0,0,0,.35); }
+.tear-preview-demo svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
+.tear-preview-demo path { fill: none; stroke: #6a4e27; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 180; stroke-dashoffset: 180; animation: previewTear 2.1s ease-in-out infinite; }
+.preview-hand { position: absolute; top: 0; left: 50%; z-index: 3; color: #f5d999; font-size: 22px; animation: previewHand 2.1s ease-in-out infinite; }
+@keyframes previewTear { 20% { stroke-dashoffset: 180; } 72%, 100% { stroke-dashoffset: 0; } }
+@keyframes previewHand { 0%, 20% { transform: translate(-50%, 0); opacity: .55; } 72% { transform: translate(-58%, 105px); opacity: 1; } 100% { transform: translate(-58%, 105px); opacity: .35; } }
+
+.detector-status {
+  min-height: 17px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
 }
 
-.tear-arrow-pulse {
-  font-size: 10px;
-  font-weight: 900;
-  animation: bounce 1.2s infinite;
+.detector-status[data-state="recording"],
+.detector-status[data-state="checking"] {
+  color: var(--accent-blue);
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(3px); }
+.detector-status[data-state="verified"] {
+  color: var(--accent-green);
+}
+
+.detector-status[data-state="error"] {
+  color: var(--accent-red);
 }
 
 /* Right Drop Stub */
 .pass-stub-side {
   width: 58px;
-  background: #111116;
+  background: rgba(225, 211, 181, 0.72);
   padding: 12px 6px;
   display: flex;
   flex-direction: column;
@@ -1177,12 +1199,12 @@ body {
   height: 50px;
   background: repeating-linear-gradient(
     90deg,
-    #ffffff,
-    #ffffff 2px,
+    #2c2418,
+    #2c2418 2px,
     transparent 2px,
     transparent 4px,
-    #ffffff 4px,
-    #ffffff 6px,
+    #2c2418 4px,
+    #2c2418 6px,
     transparent 6px,
     transparent 8px
   );
@@ -1193,17 +1215,17 @@ body {
 .stub-serial {
   font-size: 8px;
   font-weight: 900;
-  color: var(--text-muted);
+  color: #735c35;
 }
 
 .pass-stub-side.falling {
-  animation: stubTearPhysics 0.6s forwards ease-in;
+  animation: stubTearPhysics 0.85s forwards cubic-bezier(0.22, 0.8, 0.45, 1);
 }
 
 @keyframes stubTearPhysics {
   0% { transform: rotate(0deg) translateY(0); opacity: 1; }
-  30% { transform: rotate(15deg) translateY(12px); }
-  100% { transform: rotate(50deg) translateY(160px) translateX(30px); opacity: 0; }
+  35% { transform: rotate(11deg) translateY(18px); opacity: 1; }
+  100% { transform: rotate(28deg) translateY(210px) translateX(24px); opacity: 0; }
 }
 
 .pass-stub-side.torn {
@@ -1292,8 +1314,14 @@ body {
 .upi-box {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.08), rgba(17, 17, 21, 0.98) 45%);
 }
+
+.upi-box label { font-size: 12px; color: var(--text-primary); }
 
 .upi-input-row {
   display: flex;
@@ -1315,6 +1343,21 @@ body {
   cursor: pointer;
 }
 
+.btn-generate-qr {
+  width: 100%;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 10px;
+  padding: 11px 14px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+  font: 800 11px var(--font-sf);
+  letter-spacing: .35px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-generate-qr:hover { background: rgba(56, 189, 248, 0.22); border-color: var(--accent-blue); }
+
 .upi-apps-icons {
   display: flex;
   gap: 6px;
@@ -1329,6 +1372,25 @@ body {
   font-weight: 800;
   color: var(--text-secondary);
 }
+
+.upi-qr-payment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: 14px;
+  text-align: center;
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.09), var(--bg-surface-elevated) 52%);
+}
+
+.upi-qr-payment[hidden] { display: none; }
+.upi-qr-payment h3 { font-size: 16px; }
+.upi-qr-payment p { color: var(--text-secondary); font-size: 12px; }
+.payment-qr-frame { display: grid; place-items: center; min-width: 204px; min-height: 204px; padding: 10px; border-radius: 12px; background: #fff; box-shadow: 0 12px 28px rgba(0, 0, 0, .35); }
+.payment-qr-frame img, .payment-qr-frame canvas { display: block; max-width: 184px; }
+.qr-waiting-label { color: var(--accent-green); font-size: 11px; font-weight: 800; }
 
 .payment-action-block {
   margin-top: 20px;

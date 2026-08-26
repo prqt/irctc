@@ -6,7 +6,7 @@
  * - Browser-Style Top Progress Bar (Grey/Charcoal)
  * - Persistent PNR Generation & Comprehensive PNR Status Enquiry
  * - Interactive Train Class Selection & Availability Check Button
- * - Auto-Fill, Robust Swipe-to-Tear Verification & Printable Confirmed E-Ticket
+ * - Auto-Fill, DELBOT-backed Freehand Tear Verification & Printable Confirmed E-Ticket
  */
 
 import { searchStations, populateStationDatalist } from './stations.js';
@@ -153,11 +153,12 @@ export function initBookingEngine() {
   document.getElementById('add-passenger-btn')?.addEventListener('click', () => addPassengerRow());
   document.getElementById('passenger-form')?.addEventListener('submit', handlePassengersSubmit);
 
-  // Review & Swipe-To-Tear Human Verification
-  initSwipeToTear();
+  // Review & freehand tear human verification
+  initFreehandTear();
+  document.getElementById('btn-close-tear-preview')?.addEventListener('click', closeTearPreview);
   document.getElementById('btn-proceed-to-payment')?.addEventListener('click', () => {
     if (!bookingState.isHumanVerified) {
-      showToast('Please swipe down to tear the pass and verify.');
+      showToast('Please tear the gate pass to complete verification.');
       return;
     }
     switchView('payment');
@@ -816,6 +817,10 @@ function handlePassengersSubmit(e) {
       showToast(`Please enter valid age for Passenger #${i + 1}`);
       return;
     }
+    if (p.concession === 'Senior Citizen' && p.age < 60) {
+      showToast(`Passenger #${i + 1} must be 60 or older for the Senior Citizen concession.`);
+      return;
+    }
   }
 
   const emailEl = document.getElementById('booking-contact-email');
@@ -839,15 +844,16 @@ function handlePassengersSubmit(e) {
 
   calculateBill();
   renderPaperBill();
-  resetSwipeToTear();
+  resetFreehandTear();
 
   triggerTopProgress(400, () => {
     switchView('review');
+    showTearPreview();
   });
 }
 
 /* ==========================================================================
-   STEP 4: PAPER BILL CALCULATION & SWIPE-TO-TEAR
+   STEP 4: PAPER BILL CALCULATION & FREEHAND TEAR
    ========================================================================== */
 function calculateBill() {
   const perTicket = (bookingState.selectedClass && bookingState.selectedClass.fare) ? bookingState.selectedClass.fare : 1850;
@@ -959,64 +965,113 @@ function renderPaperBill() {
 }
 
 /* ==========================================================================
-   HUMAN VERIFICATION: SWIPE-TO-TEAR PASS
+   HUMAN VERIFICATION: DELBOT FREEHAND TEAR PASS
    ========================================================================== */
-function initSwipeToTear() {
-  const thumb = document.getElementById('tear-slider-thumb');
+function initFreehandTear() {
+  const interactionZone = document.getElementById('tear-interaction-zone');
+  const pass = document.getElementById('tearable-pass-box');
   const stub = document.getElementById('pass-stub-side');
-  if (!thumb && !stub) return;
+  const path = document.getElementById('tear-trajectory-path');
+  const detectorStatus = document.getElementById('detector-status');
+  if (!interactionZone || !pass || !path) return;
 
-  let isDragging = false;
-  let startY = 0;
-  let currentY = 0;
+  let isTearing = false;
+  let recorder = null;
+  let points = [];
 
-  function onStart(e) {
-    if (bookingState.isHumanVerified) return;
-    isDragging = true;
-    startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-    if (thumb) thumb.style.transition = 'none';
-    if (stub) stub.style.transition = 'none';
+  const updateStatus = (message, state = '') => {
+    if (!detectorStatus) return;
+    detectorStatus.textContent = message;
+    detectorStatus.dataset.state = state;
+  };
+
+  const updatePath = () => {
+    path.setAttribute('d', points.map((point, index) =>
+      `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '));
+  };
+
+  const clearTrajectory = () => {
+    points = [];
+    path.setAttribute('d', '');
+  };
+
+  const recordPoint = (event, type = 'Move') => {
+    const bounds = interactionZone.getBoundingClientRect();
+    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    points.push(point);
+    recorder.addRecord({ time: event.timeStamp, x: event.clientX, y: event.clientY, type });
+    updatePath();
+  };
+
+  function onStart(event) {
+    if (bookingState.isHumanVerified || event.pointerType === 'mouse' && event.button !== 0) return;
+    if (!window.delbot?.Recorder || !window.delbot?.Models?.rnn1) {
+      updateStatus('Trajectory detector is unavailable. Reload and try again.', 'error');
+      return;
+    }
+
+    isTearing = true;
+    clearTrajectory();
+    const zoneBounds = interactionZone.getBoundingClientRect();
+    document.getElementById('tear-trajectory-layer')?.setAttribute('viewBox', `0 0 ${zoneBounds.width} ${zoneBounds.height}`);
+    recorder = new window.delbot.Recorder(window.innerWidth, window.innerHeight);
+    recorder.setMaxSize(500);
+    interactionZone.setPointerCapture?.(event.pointerId);
+    recordPoint(event, 'Pressed');
+    updateStatus('Recording your freehand tear…', 'recording');
   }
 
-  function onMove(e) {
-    if (!isDragging || bookingState.isHumanVerified) return;
-    const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-    currentY = Math.max(0, clientY - startY);
+  function onMove(event) {
+    if (!isTearing || bookingState.isHumanVerified) return;
+    const samples = event.getCoalescedEvents?.() || [event];
+    samples.forEach(sample => recordPoint(sample));
+  }
 
-    if (currentY < 120) {
-      if (thumb) thumb.style.transform = `translateY(${currentY}px)`;
-      if (stub) stub.style.transform = `translateY(${currentY * 0.6}px) rotate(${currentY * 0.04}deg)`;
-    } else {
-      completeTear();
+  async function onEnd(event) {
+    if (!isTearing || bookingState.isHumanVerified) return;
+    isTearing = false;
+    recordPoint(event, 'Released');
+    interactionZone.releasePointerCapture?.(event.pointerId);
+
+    if (recorder.getRecords().length < 25) {
+      updateStatus('Tear a little longer so the detector can assess the trajectory.', 'error');
+      clearTrajectory();
+      return;
+    }
+
+    updateStatus('Analysing tear trajectory…', 'checking');
+    try {
+      // DELBOT returns probabilities that a trajectory is bot-generated. Only this tear's points are recorded.
+      const predictions = await recorder.getPrediction(window.delbot.Models.rnn1);
+      if (!predictions.length) {
+        updateStatus('Not enough trajectory data. Please make one longer freehand tear.', 'error');
+        clearTrajectory();
+        return;
+      }
+
+      const botConfidence = predictions.reduce((total, prediction) => total + prediction, 0) / predictions.length;
+      const humanConfidence = 1 - botConfidence;
+      if (botConfidence > 0.45) {
+        updateStatus(`Bot confidence ${(botConfidence * 100).toFixed(1)}% — please try a new freehand tear.`, 'error');
+        clearTrajectory();
+        return;
+      }
+
+      completeTear(humanConfidence, botConfidence);
+    } catch (error) {
+      console.error('DELBOT trajectory analysis failed.', error);
+      updateStatus('Could not analyse this trajectory. Please try again.', 'error');
+      clearTrajectory();
     }
   }
 
-  function onEnd() {
-    if (!isDragging || bookingState.isHumanVerified) return;
-    isDragging = false;
-    if (thumb) {
-      thumb.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-      thumb.style.transform = 'translateY(0px)';
-    }
-    if (stub) {
-      stub.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-      stub.style.transform = 'translateY(0px)';
-    }
-  }
-
-  function completeTear() {
-    isDragging = false;
+  function completeTear(humanConfidence, botConfidence) {
     bookingState.isHumanVerified = true;
-
-    if (thumb) {
-      thumb.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-      thumb.style.transform = 'translateY(160px)';
-      thumb.style.opacity = '0';
-    }
+    updateStatus(`Human confidence ${(humanConfidence * 100).toFixed(1)}% · Bot confidence ${(botConfidence * 100).toFixed(1)}%`, 'verified');
+    pass.classList.add('torn');
     if (stub) {
-      stub.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
-      stub.style.transform = 'translateY(180px) rotate(12deg)';
-      stub.style.opacity = '0';
+      stub.style.transition = 'none';
+      stub.classList.add('falling');
     }
 
     setTimeout(() => {
@@ -1029,47 +1084,58 @@ function initSwipeToTear() {
         payBtn.classList.remove('disabled');
         payBtn.textContent = `PROCEED TO PAYMENT (₹${bookingState.pricing.total.toFixed(2)}) →`;
       }
-      showToast('✔ Human verification complete! Security gate unlocked.');
+      showToast('✔ Tear accepted. Human verification complete.');
     }, 250);
   }
 
-  // Bind drag events on slider thumb & stub
-  [thumb, stub].forEach(el => {
-    if (!el) return;
-    el.addEventListener('mousedown', onStart);
-    el.addEventListener('touchstart', onStart, { passive: true });
-  });
-
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onEnd);
-  window.addEventListener('touchmove', onMove, { passive: true });
-  window.addEventListener('touchend', onEnd);
+  interactionZone.addEventListener('pointerdown', onStart);
+  interactionZone.addEventListener('pointermove', onMove);
+  interactionZone.addEventListener('pointerup', onEnd);
+  interactionZone.addEventListener('pointercancel', onEnd);
+  updateStatus(
+    window.delbot?.Models?.rnn1 ? 'Ready for a freehand tear.' : 'Trajectory detector is unavailable. Reload and try again.',
+    window.delbot?.Models?.rnn1 ? '' : 'error'
+  );
 }
 
-function resetSwipeToTear() {
+function showTearPreview() {
+  const preview = document.getElementById('tear-preview-modal');
+  if (preview) preview.hidden = false;
+}
+
+function closeTearPreview() {
+  const preview = document.getElementById('tear-preview-modal');
+  if (preview) preview.hidden = true;
+}
+
+function resetFreehandTear() {
   bookingState.isHumanVerified = false;
-  const thumb = document.getElementById('tear-slider-thumb');
+  const pass = document.getElementById('tearable-pass-box');
   const stub = document.getElementById('pass-stub-side');
+  const path = document.getElementById('tear-trajectory-path');
+  const detectorStatus = document.getElementById('detector-status');
   const successStamp = document.getElementById('tear-success-stamp');
   const payBtn = document.getElementById('btn-proceed-to-payment');
 
-  if (thumb) {
-    thumb.style.display = 'flex';
-    thumb.style.transform = 'translateY(0px)';
-    thumb.style.opacity = '1';
-    thumb.style.transition = 'none';
-  }
+  if (pass) pass.classList.remove('torn');
+  if (path) path.setAttribute('d', '');
   if (stub) {
+    stub.classList.remove('falling');
     stub.style.display = 'block';
     stub.style.transform = 'translateY(0px)';
     stub.style.opacity = '1';
     stub.style.transition = 'none';
   }
   if (successStamp) successStamp.style.display = 'none';
+  if (detectorStatus) {
+    const detectorReady = Boolean(window.delbot?.Models?.rnn1);
+    detectorStatus.textContent = detectorReady ? 'Ready for a freehand tear.' : 'Trajectory detector is unavailable. Reload and try again.';
+    detectorStatus.dataset.state = detectorReady ? '' : 'error';
+  }
   if (payBtn) {
     payBtn.disabled = true;
     payBtn.classList.add('disabled');
-    payBtn.textContent = '🔒 SWIPE TO UNLOCK PAYMENT';
+    payBtn.textContent = '🔒 TEAR TO UNLOCK PAYMENT';
   }
 }
 
@@ -1089,6 +1155,13 @@ function initPaymentTabs() {
       const method = tab.getAttribute('data-paymethod');
       const panel = document.getElementById(`panel-${method}`);
       if (panel) panel.style.display = 'block';
+      const upiInput = document.getElementById('upi-id-input');
+      if (method !== 'upi') {
+        resetUpiQrPayment();
+        if (upiInput) upiInput.required = false;
+      } else if (upiInput) {
+        upiInput.required = Boolean(document.getElementById('upi-qr-payment')?.hidden);
+      }
     });
   });
 
@@ -1100,15 +1173,64 @@ function initPaymentTabs() {
       showToast('Please enter a valid UPI ID (e.g. name@bank)');
     }
   });
+
+  document.getElementById('btn-generate-qr')?.addEventListener('click', generateDemoQrPayment);
+}
+
+function resetUpiQrPayment() {
+  const entry = document.getElementById('upi-entry-form');
+  const qrPayment = document.getElementById('upi-qr-payment');
+  const upiInput = document.getElementById('upi-id-input');
+  if (entry) entry.hidden = false;
+  if (qrPayment) qrPayment.hidden = true;
+  if (upiInput) upiInput.required = true;
+}
+
+function generateDemoQrPayment() {
+  const upiInput = document.getElementById('upi-id-input');
+  const upiId = upiInput?.value.trim();
+  if (!upiId || !upiId.includes('@')) {
+    showToast('Enter a valid UPI ID before generating the demo QR.');
+    upiInput?.focus();
+    return;
+  }
+  if (!window.QRCode) {
+    showToast('QR generator is still loading. Please try again.');
+    return;
+  }
+
+  const amount = bookingState.pricing.total.toFixed(2);
+  const payload = `upi://pay?pa=irctc.demo@upi&pn=IRCTC%20Demo&am=${amount}&cu=INR&tn=Demo%20booking%20payment`;
+  const qrTarget = document.getElementById('payment-qr-code');
+  const entry = document.getElementById('upi-entry-form');
+  const qrPayment = document.getElementById('upi-qr-payment');
+  if (!qrTarget || !entry || !qrPayment) return;
+
+  qrTarget.innerHTML = '';
+  new window.QRCode(qrTarget, { text: payload, width: 184, height: 184, colorDark: '#111827', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.H });
+  document.getElementById('qr-payment-amount').textContent = amount;
+  entry.hidden = true;
+  qrPayment.hidden = false;
+  if (upiInput) upiInput.required = false;
 }
 
 function handlePaymentSubmit(e) {
   e.preventDefault();
 
+  const submitButton = document.getElementById('pay-submit-btn');
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'PROCESSING PAYMENT…';
+  }
+
   triggerTopProgress(800, () => {
     generateConfirmedTicket();
     clearPaymentForms();
     switchView('ticket');
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = 'PAY & CONFIRM BOOKING →';
+    }
     showToast('Payment successful! Your confirmed e-ticket has been issued.');
   });
 }
@@ -1436,6 +1558,7 @@ function clearPaymentForms() {
   if (cardCvv) cardCvv.value = '';
   if (cardName) cardName.value = '';
   if (upiInput) upiInput.value = '';
+  resetUpiQrPayment();
 }
 
 function clearAllForms() {

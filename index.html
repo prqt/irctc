@@ -301,7 +301,7 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 4: REVIEW & HUMAN VERIFICATION (PAPER BILL + SWIPE TO TEAR) ================= -->
+    <!-- ================= VIEW 4: REVIEW & HUMAN VERIFICATION (PAPER BILL + FREEHAND TEAR) ================= -->
     <section class="booking-view" id="view-review" style="display: none;">
       <div class="view-header-bar">
         <button type="button" class="btn-back-link" id="back-to-passengers">&larr; Edit Passengers</button>
@@ -350,17 +350,18 @@
           </div>
         </div>
 
-        <!-- RIGHT: SWIPE-TO-TEAR HUMAN VERIFICATION GATE -->
+        <!-- RIGHT: FREEHAND-TEAR HUMAN VERIFICATION GATE -->
         <div class="human-verify-container">
           <div class="verify-card-box">
             <div class="verify-head">
               <span class="verify-badge">SECURITY CHECK</span>
-              <h3 class="verify-title">Swipe to Tear &amp; Verify</h3>
-              <p class="verify-instruction">Drag your cursor downwards across the dotted line to tear the pass and
-                unlock payment.</p>
+              <h3 class="verify-title">Tear &amp; Verify</h3>
+              <p class="verify-instruction">Press anywhere on the gate pass and tear it with one freehand motion.
+                Your tear trajectory is checked before payment is unlocked.</p>
             </div>
 
-            <!-- The Tearable Interactive Pass -->
+            <!-- The interaction zone includes a small area above the ticket for a natural tear start. -->
+            <div class="tear-interaction-zone" id="tear-interaction-zone">
             <div class="tearable-pass-box" id="tearable-pass-box">
               <div class="pass-main-side">
                 <div class="pass-tag">IRCTC GATE PASS</div>
@@ -375,26 +376,37 @@
                 </div>
               </div>
 
-              <!-- Tear Line & Interactive Swipe Track -->
-              <div class="pass-tear-track" id="pass-tear-track">
-                <div class="tear-dotted-visual"></div>
-                <div class="tear-slider-thumb" id="tear-slider-thumb" title="Click and drag down to tear">
-                  <span class="scissor-glyph">&#x2702;</span>
-                  <div class="tear-arrow-pulse">&#x2193;</div>
-                </div>
-              </div>
-
               <!-- Right Tearable Drop Stub -->
               <div class="pass-stub-side" id="pass-stub-side">
                 <div class="stub-micro-barcodes"></div>
                 <span class="stub-serial">CRIS-2026</span>
               </div>
+              <svg class="tear-trajectory-layer" id="tear-trajectory-layer" aria-hidden="true">
+                <path id="tear-trajectory-path"></path>
+              </svg>
             </div>
+            </div>
+
+            <p class="detector-status" id="detector-status" role="status">Loading trajectory detector…</p>
 
             <div class="verify-actions">
               <button type="button" class="btn-primary-action full-width" id="btn-proceed-to-payment" disabled>
-                LOCKED &mdash; SWIPE TO UNLOCK
+                LOCKED &mdash; TEAR TO UNLOCK
               </button>
+            </div>
+
+            <div class="tear-preview-modal" id="tear-preview-modal" role="dialog" aria-modal="true" aria-labelledby="tear-preview-title" hidden>
+              <div class="tear-preview-card">
+                <span class="verify-badge">QUICK PREVIEW</span>
+                <h3 id="tear-preview-title">Tear naturally, in one motion</h3>
+                <div class="tear-preview-demo" aria-hidden="true">
+                  <div class="preview-hand">✦</div>
+                  <div class="preview-ticket"></div>
+                  <svg viewBox="0 0 280 150"><path d="M 138 12 C 114 44, 169 72, 134 137"></path></svg>
+                </div>
+                <p>Begin slightly above the ticket, then draw a freehand line across it. There is no fixed path to follow.</p>
+                <button type="button" class="btn-primary-action full-width" id="btn-close-tear-preview">OK, GOT IT</button>
+              </div>
             </div>
           </div>
         </div>
@@ -420,7 +432,7 @@
         <form id="payment-form">
           <!-- UPI Method -->
           <div class="pay-method-panel active" id="panel-upi">
-            <div class="upi-box">
+            <div class="upi-box" id="upi-entry-form">
               <label for="upi-id-input">Enter Virtual Payment Address (UPI ID) *</label>
               <div class="upi-input-row">
                 <input type="text" id="upi-id-input" placeholder="e.g. mobile@upi / username@okhdfcbank" required>
@@ -432,6 +444,14 @@
                 <span class="upi-chip">Paytm</span>
                 <span class="upi-chip">BHIM</span>
               </div>
+              <button type="button" class="btn-generate-qr" id="btn-generate-qr">GENERATE QR PAYMENT</button>
+            </div>
+            <div class="upi-qr-payment" id="upi-qr-payment" hidden>
+              <span class="verify-badge">DEMO QR PAYMENT</span>
+              <h3>Scan with any UPI app</h3>
+              <p>Demo QR for ₹<span id="qr-payment-amount">0.00</span>. It will not create a real payment.</p>
+              <div class="payment-qr-frame" id="payment-qr-code" aria-label="Demo UPI QR code"></div>
+              <span class="qr-waiting-label">Awaiting payment confirmation…</span>
             </div>
           </div>
 
@@ -845,6 +865,10 @@
     </div>
   </div>
 
+  <!-- DELBOT dependencies must load before the booking module uses the pre-trained rnn1 model. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@chrisgdt/delbot-mouse@1.3.3/dist/delbot.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script type="module" src="js/supabase.js"></script>
   <script type="module" src="js/stations.js"></script>
   <script type="module" src="js/booking.js"></script>
