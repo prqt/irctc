@@ -381,10 +381,9 @@
                 <div class="stub-micro-barcodes"></div>
                 <span class="stub-serial">CRIS-2026</span>
               </div>
-              <svg class="tear-trajectory-layer" id="tear-trajectory-layer" aria-hidden="true">
-                <path id="tear-trajectory-path"></path>
-              </svg>
+              <div class="tear-guide" aria-hidden="true"></div>
             </div>
+            <canvas class="tear-trajectory-layer" id="tear-trajectory-canvas" aria-hidden="true"></canvas>
             </div>
 
             <p class="detector-status" id="detector-status" role="status">Loading trajectory detector…</p>
@@ -402,9 +401,9 @@
                 <div class="tear-preview-demo" aria-hidden="true">
                   <div class="preview-hand">✦</div>
                   <div class="preview-ticket"></div>
-                  <svg viewBox="0 0 280 150"><path d="M 138 12 C 114 44, 169 72, 134 137"></path></svg>
+                  <svg viewBox="0 0 280 150"><path d="M 182 12 C 158 44, 211 72, 178 148"></path></svg>
                 </div>
-                <p>Begin slightly above the ticket, then draw a freehand line across it. There is no fixed path to follow.</p>
+                <p>Begin just above the ticket and tear downward on the right side. Make one open line from top to bottom—loops cannot be accepted.</p>
                 <button type="button" class="btn-primary-action full-width" id="btn-close-tear-preview">OK, GOT IT</button>
               </div>
             </div>
@@ -444,12 +443,12 @@
                 <span class="upi-chip">Paytm</span>
                 <span class="upi-chip">BHIM</span>
               </div>
-              <button type="button" class="btn-generate-qr" id="btn-generate-qr">GENERATE QR PAYMENT</button>
+              <button type="button" class="btn-generate-qr" id="btn-generate-qr">PAY WITH IRCTC QR INSTEAD</button>
             </div>
             <div class="upi-qr-payment" id="upi-qr-payment" hidden>
-              <span class="verify-badge">DEMO QR PAYMENT</span>
+              <span class="verify-badge">IRCTC QR PAYMENT</span>
               <h3>Scan with any UPI app</h3>
-              <p>Demo QR for ₹<span id="qr-payment-amount">0.00</span>. It will not create a real payment.</p>
+              <p>Pay ₹<span id="qr-payment-amount">0.00</span> to IRCTC Bank using your preferred UPI app.</p>
               <div class="payment-qr-frame" id="payment-qr-code" aria-label="Demo UPI QR code"></div>
               <span class="qr-waiting-label">Awaiting payment confirmation…</span>
             </div>

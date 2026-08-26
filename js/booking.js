@@ -971,9 +971,9 @@ function initFreehandTear() {
   const interactionZone = document.getElementById('tear-interaction-zone');
   const pass = document.getElementById('tearable-pass-box');
   const stub = document.getElementById('pass-stub-side');
-  const path = document.getElementById('tear-trajectory-path');
+  const canvas = document.getElementById('tear-trajectory-canvas');
   const detectorStatus = document.getElementById('detector-status');
-  if (!interactionZone || !pass || !path) return;
+  if (!interactionZone || !pass || !canvas) return;
 
   let isTearing = false;
   let recorder = null;
@@ -985,14 +985,91 @@ function initFreehandTear() {
     detectorStatus.dataset.state = state;
   };
 
-  const updatePath = () => {
-    path.setAttribute('d', points.map((point, index) =>
-      `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '));
+  const drawTrajectory = () => {
+    const bounds = interactionZone.getBoundingClientRect();
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = Math.round(bounds.width * pixelRatio);
+    canvas.height = Math.round(bounds.height * pixelRatio);
+    const context = canvas.getContext('2d');
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    if (!points.length) return;
+    context.strokeStyle = '#6a4e27';
+    context.lineWidth = 2.5;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.shadowColor = 'rgba(255,255,255,.5)';
+    context.shadowBlur = 4;
+    context.beginPath();
+    context.moveTo(points[0].x, points[0].y);
+    points.slice(1).forEach(point => context.lineTo(point.x, point.y));
+    context.stroke();
+    const current = points.at(-1);
+    context.fillStyle = '#6a4e27';
+    context.beginPath();
+    context.arc(current.x, current.y, 2.2, 0, Math.PI * 2);
+    context.fill();
+  };
+
+  const ticketTop = () => pass.getBoundingClientRect().top - interactionZone.getBoundingClientRect().top;
+
+  const hasSelfIntersection = (line) => {
+    const cross = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    for (let i = 0; i < line.length - 1; i++) {
+      for (let j = i + 2; j < line.length - 1; j++) {
+        if (i === 0 && j === line.length - 2) continue;
+        const a = line[i], b = line[i + 1], c = line[j], d = line[j + 1];
+        const abC = cross(a, b, c), abD = cross(a, b, d), cdA = cross(c, d, a), cdB = cross(c, d, b);
+        if (((abC > 0 && abD < 0) || (abC < 0 && abD > 0)) && ((cdA > 0 && cdB < 0) || (cdA < 0 && cdB > 0))) return true;
+      }
+    }
+    for (let i = 0; i < line.length; i++) {
+      for (let j = i + 8; j < line.length; j++) {
+        if (Math.hypot(line[i].x - line[j].x, line[i].y - line[j].y) < 8) return true;
+      }
+    }
+    return false;
+  };
+
+  const validateTearShape = () => {
+    const top = ticketTop();
+    const height = pass.getBoundingClientRect().height;
+    if (points.length < 12 || points[0].y > top + 28 || points.at(-1).y < top + height - 20) {
+      return 'Start just above the ticket and finish at its bottom edge.';
+    }
+    if (hasSelfIntersection(points)) return 'Closed or crossing tears cannot be accepted. Please make one open tear.';
+    return '';
+  };
+
+  const showFallingPiece = () => {
+    const top = ticketTop();
+    const bounds = pass.getBoundingClientRect();
+    const tear = points.map(point => ({
+      x: Math.max(0, Math.min(bounds.width, point.x)),
+      y: Math.max(0, Math.min(bounds.height, point.y - top))
+    }));
+    tear[0].y = 0;
+    tear[tear.length - 1].y = bounds.height;
+    const leftShape = [[0, 0], ...tear, [0, bounds.height]].map(point => `${point.x}px ${point.y}px`).join(', ');
+    const rightShape = [...tear, [bounds.width, bounds.height], [bounds.width, 0]].map(point => `${point.x}px ${point.y}px`).join(', ');
+    pass.style.clipPath = `polygon(${leftShape})`;
+
+    const oldPiece = interactionZone.querySelector('.torn-ticket-piece');
+    oldPiece?.remove();
+    const piece = pass.cloneNode(true);
+    piece.removeAttribute('id');
+    piece.classList.add('torn-ticket-piece');
+    piece.querySelector('#tear-success-stamp')?.remove();
+    piece.querySelector('#pass-stub-side')?.removeAttribute('id');
+    piece.style.clipPath = `polygon(${rightShape})`;
+    piece.style.top = `${top}px`;
+    interactionZone.appendChild(piece);
+    requestAnimationFrame(() => piece.classList.add('falling'));
   };
 
   const clearTrajectory = () => {
     points = [];
-    path.setAttribute('d', '');
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const recordPoint = (event, type = 'Move') => {
@@ -1000,11 +1077,13 @@ function initFreehandTear() {
     const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
     points.push(point);
     recorder.addRecord({ time: event.timeStamp, x: event.clientX, y: event.clientY, type });
-    updatePath();
+    drawTrajectory();
   };
 
   function onStart(event) {
     if (bookingState.isHumanVerified || event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    window.getSelection?.().removeAllRanges();
     if (!window.delbot?.Recorder || !window.delbot?.Models?.rnn1) {
       updateStatus('Trajectory detector is unavailable. Reload and try again.', 'error');
       return;
@@ -1012,8 +1091,6 @@ function initFreehandTear() {
 
     isTearing = true;
     clearTrajectory();
-    const zoneBounds = interactionZone.getBoundingClientRect();
-    document.getElementById('tear-trajectory-layer')?.setAttribute('viewBox', `0 0 ${zoneBounds.width} ${zoneBounds.height}`);
     recorder = new window.delbot.Recorder(window.innerWidth, window.innerHeight);
     recorder.setMaxSize(500);
     interactionZone.setPointerCapture?.(event.pointerId);
@@ -1023,15 +1100,32 @@ function initFreehandTear() {
 
   function onMove(event) {
     if (!isTearing || bookingState.isHumanVerified) return;
+    event.preventDefault();
     const samples = event.getCoalescedEvents?.() || [event];
-    samples.forEach(sample => recordPoint(sample));
+    for (const sample of samples) {
+      recordPoint(sample);
+      const bottom = ticketTop() + pass.getBoundingClientRect().height;
+      if (points.at(-1).y >= bottom - 2) {
+        finishTear(sample);
+        break;
+      }
+    }
   }
 
-  async function onEnd(event) {
+  async function finishTear(event) {
     if (!isTearing || bookingState.isHumanVerified) return;
     isTearing = false;
-    recordPoint(event, 'Released');
+    if (points.at(-1)?.x !== event.clientX - interactionZone.getBoundingClientRect().left || points.at(-1)?.y !== event.clientY - interactionZone.getBoundingClientRect().top) {
+      recordPoint(event, 'Released');
+    }
     interactionZone.releasePointerCapture?.(event.pointerId);
+
+    const invalidShape = validateTearShape();
+    if (invalidShape) {
+      updateStatus(invalidShape, 'error');
+      clearTrajectory();
+      return;
+    }
 
     if (recorder.getRecords().length < 25) {
       updateStatus('Tear a little longer so the detector can assess the trajectory.', 'error');
@@ -1065,14 +1159,14 @@ function initFreehandTear() {
     }
   }
 
+  function onEnd(event) { finishTear(event); }
+
   function completeTear(humanConfidence, botConfidence) {
     bookingState.isHumanVerified = true;
     updateStatus(`Human confidence ${(humanConfidence * 100).toFixed(1)}% · Bot confidence ${(botConfidence * 100).toFixed(1)}%`, 'verified');
     pass.classList.add('torn');
-    if (stub) {
-      stub.style.transition = 'none';
-      stub.classList.add('falling');
-    }
+    showFallingPiece();
+    // The cloned, clipped ticket piece contains every pixel to the right of the tear and falls as one unit.
 
     setTimeout(() => {
       const successStamp = document.getElementById('tear-success-stamp');
@@ -1092,6 +1186,8 @@ function initFreehandTear() {
   interactionZone.addEventListener('pointermove', onMove);
   interactionZone.addEventListener('pointerup', onEnd);
   interactionZone.addEventListener('pointercancel', onEnd);
+  interactionZone.addEventListener('selectstart', event => event.preventDefault());
+  interactionZone.addEventListener('dragstart', event => event.preventDefault());
   updateStatus(
     window.delbot?.Models?.rnn1 ? 'Ready for a freehand tear.' : 'Trajectory detector is unavailable. Reload and try again.',
     window.delbot?.Models?.rnn1 ? '' : 'error'
@@ -1112,13 +1208,17 @@ function resetFreehandTear() {
   bookingState.isHumanVerified = false;
   const pass = document.getElementById('tearable-pass-box');
   const stub = document.getElementById('pass-stub-side');
-  const path = document.getElementById('tear-trajectory-path');
+  const canvas = document.getElementById('tear-trajectory-canvas');
   const detectorStatus = document.getElementById('detector-status');
   const successStamp = document.getElementById('tear-success-stamp');
   const payBtn = document.getElementById('btn-proceed-to-payment');
 
-  if (pass) pass.classList.remove('torn');
-  if (path) path.setAttribute('d', '');
+  if (pass) {
+    pass.classList.remove('torn');
+    pass.style.clipPath = '';
+  }
+  document.querySelector('.torn-ticket-piece')?.remove();
+  if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
   if (stub) {
     stub.classList.remove('falling');
     stub.style.display = 'block';
@@ -1188,19 +1288,14 @@ function resetUpiQrPayment() {
 
 function generateDemoQrPayment() {
   const upiInput = document.getElementById('upi-id-input');
-  const upiId = upiInput?.value.trim();
-  if (!upiId || !upiId.includes('@')) {
-    showToast('Enter a valid UPI ID before generating the demo QR.');
-    upiInput?.focus();
-    return;
-  }
   if (!window.QRCode) {
     showToast('QR generator is still loading. Please try again.');
     return;
   }
 
   const amount = bookingState.pricing.total.toFixed(2);
-  const payload = `upi://pay?pa=irctc.demo@upi&pn=IRCTC%20Demo&am=${amount}&cu=INR&tn=Demo%20booking%20payment`;
+  // QR mode uses IRCTC's receiving address; no customer UPI ID is needed.
+  const payload = `upi://pay?pa=irctc.bank@upi&pn=IRCTC%20Bank&am=${amount}&cu=INR&tn=IRCTC%20booking%20payment`;
   const qrTarget = document.getElementById('payment-qr-code');
   const entry = document.getElementById('upi-entry-form');
   const qrPayment = document.getElementById('upi-qr-payment');
