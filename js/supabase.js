@@ -5,7 +5,7 @@
 
 // Supabase Project Configuration
 export const SUPABASE_URL = window.ENV_SUPABASE_URL || 'https://whxqwxbxpugskfufshdb.supabase.co';
-export const SUPABASE_ANON_KEY = 'sb_publishable_GiMSfFe-T2zy6Ix3T_MGmA_hOsIZUJX';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoeHF3eGJ4cHVnc2tmdWZzaGRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDU0OTIsImV4cCI6MjEwMzIyMTQ5Mn0.H6apks0TjafJI9Z2S2jbYUciAXUO-jjk-1_jNceiGLk';
 
 // Initialize Supabase Client
 export let supabase = null;
@@ -179,11 +179,12 @@ export async function findBookingByPnr(pnrQuery) {
   // 1. First, perform live Cloud DB query via Supabase
   if (supabase) {
     try {
-      // Query by clean PNR or formatted PNR
+      // Reconstruct the dashed format (XXX-XXXXXXX) used by generatePnr()
+      const formatted = clean.length === 10 ? `${clean.slice(0, 3)}-${clean.slice(3)}` : clean;
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
-        .or(`pnr.eq.${clean},pnr.ilike.%${clean}%`)
+        .or(`pnr.eq.${clean},pnr.eq.${formatted}`)
         .limit(1);
 
       if (!error && data && data.length > 0) {
