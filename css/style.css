@@ -387,6 +387,10 @@ body {
   animation: fadeIn 0.25s ease;
 }
 
+.booking-view#view-trains {
+  max-width: 1200px;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
@@ -635,6 +639,157 @@ body {
 .payment-amount-badge {
   color: var(--accent-green);
   font-size: 13px;
+}
+
+/* 40% (Left SVG) - 60% (Right List) Split Layout for Train Search */
+.trains-split-container {
+  display: flex;
+  justify-content: center;
+  gap: 0px;
+  width: 100%;
+  max-width: 680px;
+  margin: 14px auto 0;
+  position: relative;
+  transition: max-width 0.85s cubic-bezier(0.19, 1, 0.22, 1), 
+              gap 0.85s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.trains-split-container.state-split {
+  max-width: 1140px;
+  gap: 36px;
+}
+
+/* 40% Left: Pure Train SVG Pane (Sticky and fixed in place during scroll) */
+.trains-svg-pane {
+  position: sticky;
+  top: 88px;
+  height: calc(100vh - 140px);
+  max-height: 760px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  width: 0px;
+  min-width: 0px;
+  max-width: 0px;
+  opacity: 0;
+  transform: scale(0.95) translateX(-20px);
+  transition: width 0.85s cubic-bezier(0.19, 1, 0.22, 1),
+              max-width 0.85s cubic-bezier(0.19, 1, 0.22, 1),
+              min-width 0.85s cubic-bezier(0.19, 1, 0.22, 1),
+              opacity 0.65s cubic-bezier(0.19, 1, 0.22, 1),
+              transform 0.85s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.trains-split-container.state-split .trains-svg-pane {
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
+  opacity: 1;
+  transform: scale(1) translateX(0);
+}
+
+.train-pure-viewport {
+  width: 360px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+}
+
+.train-svg-slider {
+  width: 100%;
+  max-width: 360px;
+  transform-origin: top center;
+  transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.5s ease;
+  will-change: transform;
+  transform: translate3d(0, 120vh, 0);
+}
+
+/* Initially Completely Hidden below the screen */
+.train-svg-slider.state-hidden {
+  transform: translate3d(0, 120vh, 0);
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* EC selection: Smoothly slides into view from bottom */
+.train-svg-slider.state-ec {
+  transform: translate3d(0, 0px, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* CC selection: Glides further upwards to reveal CC coach */
+.train-svg-slider.state-cc {
+  transform: translate3d(0, -870px, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.vande-bharat-svg {
+  display: block;
+  filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.85));
+}
+
+/* 60% Right: Train Selection Pane (Scrolls independently without moving the train SVG) */
+.trains-selection-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  max-height: calc(100vh - 170px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-medium) transparent;
+  transition: all 0.85s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.trains-selection-pane::-webkit-scrollbar {
+  width: 5px;
+}
+.trains-selection-pane::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+.pane-headline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+}
+
+.pane-heading {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.pane-subheading {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.trains-count-tag {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent-green);
+  white-space: nowrap;
 }
 
 .trains-list {
@@ -2309,16 +2464,17 @@ body {
    TRAIN CARD SELECTION & CHECK AVAILABILITY BUTTON
    ========================================================================== */
 .class-fare-box.selected {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: #ffffff !important;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
   transform: translateY(-2px);
 }
 
 .class-fare-box.selected .btn-book-class {
-  background: #ffffff;
-  color: #000000;
+  background: #10b981;
+  color: #08090b;
   font-weight: 900;
+  border-color: #10b981;
 }
 
 .train-bottom-action {
@@ -2694,6 +2850,15 @@ body {
 /* ==========================================================================
    RESPONSIVE (MOBILE & TABLET)
    ========================================================================== */
+@media (max-width: 992px) {
+  .trains-split-container {
+    grid-template-columns: 1fr;
+  }
+  .trains-showcase-pane {
+    position: static;
+  }
+}
+
 @media (max-width: 768px) {
   .notch-bar { height: 60px; padding: 0 14px; }
   .notch-center-nav { display: none; }

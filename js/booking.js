@@ -541,6 +541,9 @@ function handleSearchSubmit(e) {
   bookingState.search.class = document.getElementById('search-class').value;
   bookingState.search.quota = document.getElementById('search-quota').value;
 
+  // Initialize fresh session with dynamic availability and assigned seats
+  initSearchSession();
+
   triggerTopProgress(500, () => {
     renderTrainsList();
     switchView('trains');
@@ -548,16 +551,169 @@ function handleSearchSubmit(e) {
 }
 
 /* ==========================================================================
-   STEP 2: TRAIN LIST RENDERING & SELECTION WITH "CHECK AVAILABILITY" BUTTON
+   STEP 2: TRAIN LIST RENDERING & 2D SVG TRAIN SELECTION (SESSION-BASED)
    ========================================================================== */
+export function initSearchSession() {
+  // 1. Generate dynamic realistic availability counts for all trains & classes in this session
+  const availMap = {};
+  TRAINS_DATA.forEach(train => {
+    availMap[train.number] = {};
+    train.classes.forEach(cls => {
+      let min = 15, max = 85;
+      if (cls.code === '1A' || cls.code === 'EC') { min = 8; max = 36; }
+      else if (cls.code === '2A') { min = 14; max = 48; }
+      else if (cls.code === '3A' || cls.code === 'CC') { min = 28; max = 110; }
+      else if (cls.code === 'SL') { min = 45; max = 185; }
+      
+      const count = Math.floor(Math.random() * (max - min + 1)) + min;
+      availMap[train.number][cls.code] = `AVL ${count}`;
+    });
+  });
+
+  // 2. Pre-assign stable session seats with low likelihood for bottom rows
+  // EC: 85% probability for Rows 1-5, 15% probability for Rows 6-10
+  const isEcBottom = Math.random() < 0.15;
+  const ecRow = isEcBottom ? Math.floor(Math.random() * 5) + 6 : Math.floor(Math.random() * 5) + 1;
+  const ecCols = ['A', 'B', 'C', 'D'];
+  const ecCol = ecCols[Math.floor(Math.random() * ecCols.length)];
+  const ecSeatNumber = `${ecRow}${ecCol}`;
+  const ecBerthType = (ecCol === 'A' || ecCol === 'D') ? 'Window' : 'Aisle';
+
+  // CC: 85% probability for Rows 1-6, 15% probability for Rows 7-11
+  const isCcBottom = Math.random() < 0.15;
+  const ccRow = isCcBottom ? Math.floor(Math.random() * 5) + 7 : Math.floor(Math.random() * 6) + 1;
+  const ccCols = ['A', 'B', 'C', 'D', 'E'];
+  const ccCol = ccCols[Math.floor(Math.random() * ccCols.length)];
+  const ccSeatNumber = `${ccRow}${ccCol}`;
+  const ccBerthType = (ccCol === 'A' || ccCol === 'E') ? 'Window' : (ccCol === 'B') ? 'Middle' : 'Aisle';
+
+  bookingState.sessionData = {
+    availMap,
+    sessionSeats: {
+      EC: { coach: 'EC', row: ecRow, seatNumber: ecSeatNumber, berthType: ecBerthType, seatId: `seat-EC-${ecSeatNumber}` },
+      CC: { coach: 'CC', row: ccRow, seatNumber: ccSeatNumber, berthType: ccBerthType, seatId: `seat-CC-${ccSeatNumber}` }
+    }
+  };
+}
+
+export function assignDynamicSeat(trainNumber, classCode) {
+  if (!bookingState.sessionData) {
+    initSearchSession();
+  }
+
+  const isVandeBharat = trainNumber === '22436';
+  if (!isVandeBharat) {
+    return { coach: classCode, seatNumber: 'AVL', berthType: 'Available' };
+  }
+
+  if (classCode === 'EC') {
+    const seatInfo = bookingState.sessionData.sessionSeats.EC;
+
+    // Reset all EC seats to standard unhighlighted
+    document.querySelectorAll('#coach-section-ec use[id^="seat-EC-"]').forEach(u => {
+      u.setAttribute('href', '#seat-ec');
+    });
+
+    // Highlight the session's chosen seat
+    const targetSeat = document.getElementById(seatInfo.seatId);
+    if (targetSeat) {
+      targetSeat.setAttribute('href', '#seat-ec-highlighted');
+    }
+
+    return seatInfo;
+  } else {
+    const seatInfo = bookingState.sessionData.sessionSeats.CC;
+
+    // Reset all CC seats to standard unhighlighted
+    document.querySelectorAll('#coach-section-cc use[id^="seat-CC-"]').forEach(u => {
+      u.setAttribute('href', '#seat-cc');
+    });
+
+    // Highlight the session's chosen seat
+    const targetSeat = document.getElementById(seatInfo.seatId);
+    if (targetSeat) {
+      targetSeat.setAttribute('href', '#seat-cc-highlighted');
+    }
+
+    return seatInfo;
+  }
+}
+
+export function updateTrainShowcase(trainNumber, classCode) {
+  const isVandeBharat = trainNumber === '22436';
+  const splitContainer = document.getElementById('trains-split-container');
+  const slider = document.getElementById('train-svg-slider');
+
+  if (isVandeBharat) {
+    // Smoothly shift train selection list to right 60% and reveal left 40%
+    if (splitContainer) {
+      splitContainer.classList.add('state-split');
+    }
+
+    // Assign session-consistent seat
+    const seatInfo = assignDynamicSeat(trainNumber, classCode);
+
+    if (slider) {
+      if (classCode === 'CC') {
+        slider.className = 'train-svg-slider state-cc';
+        // If bottom seat row > 6, shift train up slightly to keep seat visible in center
+        const offset = seatInfo.row > 6 ? -870 - (seatInfo.row - 6) * 55 : -870;
+        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
+      } else {
+        // EC
+        slider.className = 'train-svg-slider state-ec';
+        // If bottom seat row > 5, shift train up slightly to keep seat visible in center
+        const offset = seatInfo.row > 5 ? -(seatInfo.row - 5) * 55 : 0;
+        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
+      }
+    }
+
+    return seatInfo;
+  } else {
+    // Non-Vande Bharat trains stay centered with hidden SVG
+    if (splitContainer) {
+      splitContainer.classList.remove('state-split');
+    }
+    if (slider) {
+      slider.className = 'train-svg-slider state-hidden';
+      slider.style.transform = 'translate3d(0, 120vh, 0)';
+    }
+    return { coach: classCode, seatNumber: 'AVL', berthType: 'Available' };
+  }
+}
+
 function renderTrainsList() {
+  if (!bookingState.sessionData) {
+    initSearchSession();
+  }
+
   const summaryEl = document.getElementById('search-summary-text');
   const fromCode = (bookingState.search.from || 'NDLS').split(' - ')[0] || 'NDLS';
   const toCode = (bookingState.search.to || 'MMCT').split(' - ')[0] || 'MMCT';
-  summaryEl.textContent = `${fromCode} → ${toCode} | ${formatDate(bookingState.search.date)} | ${bookingState.search.quota} Quota`;
+  if (summaryEl) {
+    summaryEl.textContent = `${fromCode} → ${toCode} | ${formatDate(bookingState.search.date)} | ${bookingState.search.quota} Quota`;
+  }
+
+  const countTag = document.getElementById('trains-count-tag');
+  if (countTag) {
+    countTag.textContent = `${TRAINS_DATA.length} Trains Available`;
+  }
 
   const container = document.getElementById('trains-list-container');
+  if (!container) return;
   container.innerHTML = '';
+
+  // Ensure train selection starts in the middle and SVG starts completely hidden
+  const splitContainer = document.getElementById('trains-split-container');
+  if (splitContainer) {
+    splitContainer.classList.remove('state-split');
+  }
+
+  const slider = document.getElementById('train-svg-slider');
+  if (slider) {
+    slider.className = 'train-svg-slider state-hidden';
+    slider.style.transform = 'translate3d(0, 120vh, 0)';
+  }
 
   TRAINS_DATA.forEach(train => {
     const card = document.createElement('div');
@@ -566,13 +722,15 @@ function renderTrainsList() {
 
     let classPillsHtml = '';
     train.classes.forEach(cls => {
+      // Dynamic availability count per session!
+      const statusText = (bookingState.sessionData?.availMap?.[train.number]?.[cls.code]) || cls.status;
       classPillsHtml += `
         <div class="class-fare-box" data-train="${train.number}" data-class="${cls.code}" data-fare="${cls.fare}">
           <div class="class-header">
             <span class="class-code">${cls.code}</span>
             <span class="class-fare">₹${cls.fare}</span>
           </div>
-          <div class="class-status ${cls.statusType}">${cls.status}</div>
+          <div class="class-status ${cls.statusType}">${statusText}</div>
           <button type="button" class="btn-book-class">SELECT</button>
         </div>
       `;
@@ -632,11 +790,19 @@ function renderTrainsList() {
 
         box.classList.add('selected');
 
+        // Dynamically assign seat, highlight in SVG, and animate train
+        const seatInfo = updateTrainShowcase(trainNum, classCode);
+        bookingState.allocatedSeat = seatInfo;
+
         const actionBox = document.getElementById(`action-box-${trainNum}`);
         if (actionBox) {
+          const seatMatchText = (trainNum === '22436') 
+            ? `Seat ${seatInfo.seatNumber} (${seatInfo.berthType})` 
+            : 'Available Berth';
+
           actionBox.innerHTML = `
             <button type="button" class="btn-check-avail" id="btn-avail-${trainNum}">
-              Check Availability
+              Proceed with ${seatMatchText} &rarr;
             </button>
           `;
           actionBox.style.display = 'flex';

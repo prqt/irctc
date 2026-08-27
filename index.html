@@ -230,7 +230,7 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 2: TRAIN SELECTION ================= -->
+    <!-- ================= VIEW 2: TRAIN SELECTION (40% LEFT TRAIN SVG - 60% RIGHT TRAINS LIST) ================= -->
     <section class="booking-view" id="view-trains" style="display: none;">
       <div class="view-header-bar">
         <button type="button" class="btn-back-link" id="back-to-search">&larr; Modify Search</button>
@@ -239,8 +239,371 @@
         </div>
       </div>
 
-      <div class="trains-list" id="trains-list-container">
-        <!-- Rendered dynamically -->
+      <!-- 40% (Left) - 60% (Right) Split Layout -->
+      <div class="trains-split-container" id="trains-split-container">
+        
+        <!-- 40% Left: Pure 2D SVG Train Viewport (Completely clean, no cards, text, or buttons) -->
+        <div class="trains-svg-pane">
+          <div class="train-pure-viewport" id="train-pure-viewport">
+            <div class="train-svg-slider state-hidden" id="train-svg-slider">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 1780" width="100%" class="vande-bharat-svg" id="vande-bharat-svg">
+                <defs>
+                  <linearGradient id="glass-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#3d4351" />
+                    <stop offset="100%" stop-color="#16181f" />
+                  </linearGradient>
+                  <linearGradient id="hull-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#656e80" />
+                    <stop offset="15%" stop-color="#2d323e" />
+                    <stop offset="50%" stop-color="#13151a" />
+                    <stop offset="85%" stop-color="#2d323e" />
+                    <stop offset="100%" stop-color="#656e80" />
+                  </linearGradient>
+
+                  <!-- Regular EC Seat (Dark Charcoal Palette) -->
+                  <g id="seat-ec">
+                    <!-- outer shell -->
+                    <rect x="-20" y="-18" width="40" height="38" rx="8" fill="#2d323e" stroke="#404656" stroke-width="1.4" />
+                    <!-- main cushion -->
+                    <rect x="-14" y="-10" width="28" height="24" rx="6" fill="#525b6e" />
+                    <!-- headrest -->
+                    <rect x="-12" y="-24" width="24" height="10" rx="4" fill="#8e99b0" />
+                    <!-- left armrest -->
+                    <rect x="-24" y="-8" width="5" height="24" rx="2.5" fill="#1d2028" />
+                    <!-- right armrest -->
+                    <rect x="19" y="-8" width="5" height="24" rx="2.5" fill="#1d2028" />
+                    <!-- accent line -->
+                    <rect x="-14" y="-2" width="28" height="2" rx="1" fill="#6e7a91" opacity="0.4" />
+                  </g>
+
+                  <!-- Highlighted EC Seat (Subtle Green Low-Opacity) -->
+                  <g id="seat-ec-highlighted">
+                    <!-- green glow background -->
+                    <rect x="-22" y="-20" width="44" height="42" rx="10" fill="rgba(16, 185, 129, 0.18)" />
+                    <!-- outer shell -->
+                    <rect x="-20" y="-18" width="40" height="38" rx="8" fill="#1a2d24" stroke="#10b981" stroke-width="1.6" />
+                    <!-- main cushion -->
+                    <rect x="-14" y="-10" width="28" height="24" rx="6" fill="#1b4332" />
+                    <!-- headrest -->
+                    <rect x="-12" y="-24" width="24" height="10" rx="4" fill="#34d399" />
+                    <!-- left armrest -->
+                    <rect x="-24" y="-8" width="5" height="24" rx="2.5" fill="#0d2818" />
+                    <!-- right armrest -->
+                    <rect x="19" y="-8" width="5" height="24" rx="2.5" fill="#0d2818" />
+                    <!-- accent line -->
+                    <rect x="-14" y="-2" width="28" height="2" rx="1" fill="#10b981" opacity="0.8" />
+                  </g>
+
+                  <!-- Regular CC Seat (Dark Charcoal Palette) -->
+                  <g id="seat-cc">
+                    <!-- outer shell -->
+                    <rect x="-16" y="-15" width="32" height="34" rx="7" fill="#242832" stroke="#363c4b" stroke-width="1.2" />
+                    <!-- main cushion -->
+                    <rect x="-11" y="-9" width="22" height="20" rx="4" fill="#444b5b" />
+                    <!-- headrest -->
+                    <rect x="-10" y="-21" width="20" height="8" rx="3" fill="#78849b" />
+                    <!-- left armrest -->
+                    <rect x="-19" y="-6" width="4" height="18" rx="2" fill="#171920" />
+                    <!-- right armrest -->
+                    <rect x="15" y="-6" width="4" height="18" rx="2" fill="#171920" />
+                    <!-- subtle accent -->
+                    <rect x="-11" y="-2" width="22" height="1.5" rx="0.5" fill="#5f6b82" opacity="0.3" />
+                  </g>
+
+                  <!-- Highlighted CC Seat (Subtle Green Low-Opacity) -->
+                  <g id="seat-cc-highlighted">
+                    <!-- green glow background -->
+                    <rect x="-18" y="-17" width="36" height="38" rx="9" fill="rgba(16, 185, 129, 0.18)" />
+                    <!-- outer shell -->
+                    <rect x="-16" y="-15" width="32" height="34" rx="7" fill="#182c22" stroke="#10b981" stroke-width="1.6" />
+                    <!-- main cushion -->
+                    <rect x="-11" y="-9" width="22" height="20" rx="4" fill="#1b4332" />
+                    <!-- headrest -->
+                    <rect x="-10" y="-21" width="20" height="8" rx="3" fill="#34d399" />
+                    <!-- left armrest -->
+                    <rect x="-19" y="-6" width="4" height="18" rx="2" fill="#0d2818" />
+                    <!-- right armrest -->
+                    <rect x="15" y="-6" width="4" height="18" rx="2" fill="#0d2818" />
+                    <!-- subtle accent -->
+                    <rect x="-11" y="-2" width="22" height="1.5" rx="0.5" fill="#10b981" opacity="0.8" />
+                  </g>
+                </defs>
+
+                <!-- ================= COACH 1: EXECUTIVE CLASS (EC) FRONT ENGINE ================= -->
+                <g id="coach-section-ec" transform="translate(0, 0)">
+                  
+                  <!-- TRAIN HULL (Front Engine Aerodynamic Shape) -->
+                  <path d="M 35 860 L 35 180 C 35 90, 90 15, 180 15 C 270 15, 325 90, 325 180 L 325 860 Z" fill="#101116" stroke="url(#hull-edge)" stroke-width="3" />
+
+                  <!-- Side Windows -->
+                  <g fill="#1a1d26" opacity="0.7">
+                    <rect x="37" y="220" width="4" height="110" rx="1.5" />
+                    <rect x="37" y="350" width="4" height="110" rx="1.5" />
+                    <rect x="37" y="480" width="4" height="110" rx="1.5" />
+                    <rect x="37" y="610" width="4" height="110" rx="1.5" />
+                    <rect x="37" y="740" width="4" height="90" rx="1.5" />
+
+                    <rect x="319" y="220" width="4" height="110" rx="1.5" />
+                    <rect x="319" y="350" width="4" height="110" rx="1.5" />
+                    <rect x="319" y="480" width="4" height="110" rx="1.5" />
+                    <rect x="319" y="610" width="4" height="110" rx="1.5" />
+                    <rect x="319" y="740" width="4" height="90" rx="1.5" />
+                  </g>
+
+                  <!-- Nose Windshield -->
+                  <g opacity="0.85">
+                    <path d="M 70 135 C 110 50, 250 50, 290 135 C 245 100, 115 100, 70 135 Z" fill="url(#glass-grad)" stroke="#3a404d" stroke-width="1.2" />
+                    <line x1="130" y1="92" x2="138" y2="120" stroke="#101116" stroke-width="2.5" />
+                    <line x1="180" y1="78" x2="180" y2="114" stroke="#101116" stroke-width="2.5" />
+                    <line x1="230" y1="92" x2="222" y2="120" stroke="#101116" stroke-width="2.5" />
+                  </g>
+
+                  <!-- UI Header & Exits -->
+                  <g>
+                    <line x1="35" y1="170" x2="325" y2="170" stroke="#212530" stroke-width="1.2" />
+                    <text x="58" y="160" fill="#78849b" font-family="system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1">‹ EXIT</text>
+                    <text x="302" y="160" fill="#78849b" font-family="system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1" text-anchor="end">EXIT ›</text>
+                  </g>
+
+                  <!-- EC SEATING (Rows 1 - 10, 2x2 Layout) -->
+                  <g>
+                    <!-- Column labels -->
+                    <text x="88" y="205" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">A</text>
+                    <text x="140" y="205" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">B</text>
+                    <text x="220" y="205" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">C</text>
+                    <text x="272" y="205" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">D</text>
+
+                    <!-- Row 1 -->
+                    <text x="180" y="250" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">1</text>
+                    <use href="#seat-ec" x="88" y="240" id="seat-EC-1A" />
+                    <use href="#seat-ec" x="140" y="240" id="seat-EC-1B" />
+                    <use href="#seat-ec" x="220" y="240" id="seat-EC-1C" />
+                    <use href="#seat-ec" x="272" y="240" id="seat-EC-1D" />
+
+                    <!-- Row 2 -->
+                    <text x="180" y="315" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">2</text>
+                    <use href="#seat-ec" x="88" y="305" id="seat-EC-2A" />
+                    <use href="#seat-ec" x="140" y="305" id="seat-EC-2B" />
+                    <use href="#seat-ec" x="220" y="305" id="seat-EC-2C" />
+                    <use href="#seat-ec" x="272" y="305" id="seat-EC-2D" />
+
+                    <!-- Row 3 -->
+                    <text x="180" y="380" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">3</text>
+                    <use href="#seat-ec" x="88" y="370" id="seat-EC-3A" />
+                    <use href="#seat-ec" x="140" y="370" id="seat-EC-3B" />
+                    <use href="#seat-ec" x="220" y="370" id="seat-EC-3C" />
+                    <use href="#seat-ec" x="272" y="370" id="seat-EC-3D" />
+
+                    <!-- Row 4 (Selected Seat 4A) -->
+                    <text x="180" y="445" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">4</text>
+                    <use href="#seat-ec-highlighted" x="88" y="435" id="seat-EC-4A" />
+                    <use href="#seat-ec" x="140" y="435" id="seat-EC-4B" />
+                    <use href="#seat-ec" x="220" y="435" id="seat-EC-4C" />
+                    <use href="#seat-ec" x="272" y="435" id="seat-EC-4D" />
+
+                    <!-- Row 5 -->
+                    <text x="180" y="510" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">5</text>
+                    <use href="#seat-ec" x="88" y="500" id="seat-EC-5A" />
+                    <use href="#seat-ec" x="140" y="500" id="seat-EC-5B" />
+                    <use href="#seat-ec" x="220" y="500" id="seat-EC-5C" />
+                    <use href="#seat-ec" x="272" y="500" id="seat-EC-5D" />
+
+                    <!-- Row 6 -->
+                    <text x="180" y="575" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">6</text>
+                    <use href="#seat-ec" x="88" y="565" id="seat-EC-6A" />
+                    <use href="#seat-ec" x="140" y="565" id="seat-EC-6B" />
+                    <use href="#seat-ec" x="220" y="565" id="seat-EC-6C" />
+                    <use href="#seat-ec" x="272" y="565" id="seat-EC-6D" />
+
+                    <!-- Row 7 -->
+                    <text x="180" y="640" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">7</text>
+                    <use href="#seat-ec" x="88" y="630" id="seat-EC-7A" />
+                    <use href="#seat-ec" x="140" y="630" id="seat-EC-7B" />
+                    <use href="#seat-ec" x="220" y="630" id="seat-EC-7C" />
+                    <use href="#seat-ec" x="272" y="630" id="seat-EC-7D" />
+
+                    <!-- Row 8 -->
+                    <text x="180" y="705" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">8</text>
+                    <use href="#seat-ec" x="88" y="695" id="seat-EC-8A" />
+                    <use href="#seat-ec" x="140" y="695" id="seat-EC-8B" />
+                    <use href="#seat-ec" x="220" y="695" id="seat-EC-8C" />
+                    <use href="#seat-ec" x="272" y="695" id="seat-EC-8D" />
+
+                    <!-- Row 9 -->
+                    <text x="180" y="770" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">9</text>
+                    <use href="#seat-ec" x="88" y="760" id="seat-EC-9A" />
+                    <use href="#seat-ec" x="140" y="760" id="seat-EC-9B" />
+                    <use href="#seat-ec" x="220" y="760" id="seat-EC-9C" />
+                    <use href="#seat-ec" x="272" y="760" id="seat-EC-9D" />
+
+                    <!-- Row 10 -->
+                    <text x="180" y="835" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">10</text>
+                    <use href="#seat-ec" x="88" y="825" id="seat-EC-10A" />
+                    <use href="#seat-ec" x="140" y="825" id="seat-EC-10B" />
+                    <use href="#seat-ec" x="220" y="825" id="seat-EC-10C" />
+                    <use href="#seat-ec" x="272" y="825" id="seat-EC-10D" />
+                  </g>
+                </g>
+
+                <!-- ================= INTER-COACH GANGWAY / COUPLER ================= -->
+                <g id="inter-coach-coupler" transform="translate(0, 856)">
+                  <rect x="110" y="0" width="140" height="48" rx="3" fill="#141720" stroke="#2a303e" stroke-width="1.5" />
+                  <line x1="125" y1="12" x2="235" y2="12" stroke="#363e50" stroke-width="1.8" />
+                  <line x1="125" y1="24" x2="235" y2="24" stroke="#363e50" stroke-width="1.8" />
+                  <line x1="125" y1="36" x2="235" y2="36" stroke="#363e50" stroke-width="1.8" />
+                  <rect x="165" y="6" width="30" height="36" rx="2" fill="#0c0d12" stroke="#4b5568" stroke-width="1.2" />
+                </g>
+
+                <!-- ================= COACH 2: CHAIR CAR (CC) ================= -->
+                <g id="coach-section-cc" transform="translate(0, 900)">
+                  
+                  <!-- TRAIN HULL (Flat ends, rounded corners) -->
+                  <rect x="35" y="20" width="290" height="840" rx="16" fill="#101116" stroke="url(#hull-edge)" stroke-width="3" />
+
+                  <!-- Side Windows -->
+                  <g fill="#1a1d26" opacity="0.7">
+                    <rect x="37" y="50" width="4" height="120" rx="1.5" />
+                    <rect x="37" y="190" width="4" height="120" rx="1.5" />
+                    <rect x="37" y="330" width="4" height="120" rx="1.5" />
+                    <rect x="37" y="470" width="4" height="120" rx="1.5" />
+                    <rect x="37" y="610" width="4" height="120" rx="1.5" />
+                    <rect x="37" y="750" width="4" height="90" rx="1.5" />
+
+                    <rect x="319" y="50" width="4" height="120" rx="1.5" />
+                    <rect x="319" y="190" width="4" height="120" rx="1.5" />
+                    <rect x="319" y="330" width="4" height="120" rx="1.5" />
+                    <rect x="319" y="470" width="4" height="120" rx="1.5" />
+                    <rect x="319" y="610" width="4" height="120" rx="1.5" />
+                    <rect x="319" y="750" width="4" height="90" rx="1.5" />
+                  </g>
+
+                  <!-- Inter-Coach Gangway Connectors -->
+                  <rect x="120" y="20" width="120" height="8" rx="2" fill="#1b1e28" stroke="#313645" stroke-width="1" />
+                  <rect x="120" y="852" width="120" height="8" rx="2" fill="#1b1e28" stroke="#313645" stroke-width="1" />
+
+                  <!-- CC SEATING (3x2 Layout, Rows 1 - 11) -->
+                  <g>
+                    <!-- Column labels -->
+                    <text x="72" y="55" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">A</text>
+                    <text x="108" y="55" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">B</text>
+                    <text x="144" y="55" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">C</text>
+
+                    <text x="250" y="55" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">D</text>
+                    <text x="286" y="55" fill="#586277" font-family="system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle">E</text>
+
+                    <!-- Rows 1 to 11 -->
+                    <!-- Row 1 -->
+                    <text x="180" y="96" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">1</text>
+                    <use href="#seat-cc" x="72" y="88" id="seat-CC-1A" />
+                    <use href="#seat-cc" x="108" y="88" id="seat-CC-1B" />
+                    <use href="#seat-cc" x="144" y="88" id="seat-CC-1C" />
+                    <use href="#seat-cc" x="250" y="88" id="seat-CC-1D" />
+                    <use href="#seat-cc" x="286" y="88" id="seat-CC-1E" />
+
+                    <!-- Row 2 -->
+                    <text x="180" y="164" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">2</text>
+                    <use href="#seat-cc" x="72" y="156" id="seat-CC-2A" />
+                    <use href="#seat-cc" x="108" y="156" id="seat-CC-2B" />
+                    <use href="#seat-cc" x="144" y="156" id="seat-CC-2C" />
+                    <use href="#seat-cc" x="250" y="156" id="seat-CC-2D" />
+                    <use href="#seat-cc" x="286" y="156" id="seat-CC-2E" />
+
+                    <!-- Row 3 -->
+                    <text x="180" y="232" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">3</text>
+                    <use href="#seat-cc" x="72" y="224" id="seat-CC-3A" />
+                    <use href="#seat-cc" x="108" y="224" id="seat-CC-3B" />
+                    <use href="#seat-cc" x="144" y="224" id="seat-CC-3C" />
+                    <use href="#seat-cc" x="250" y="224" id="seat-CC-3D" />
+                    <use href="#seat-cc" x="286" y="224" id="seat-CC-3E" />
+
+                    <!-- Row 4 -->
+                    <text x="180" y="300" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">4</text>
+                    <use href="#seat-cc" x="72" y="292" id="seat-CC-4A" />
+                    <use href="#seat-cc" x="108" y="292" id="seat-CC-4B" />
+                    <use href="#seat-cc" x="144" y="292" id="seat-CC-4C" />
+                    <use href="#seat-cc" x="250" y="292" id="seat-CC-4D" />
+                    <use href="#seat-cc" x="286" y="292" id="seat-CC-4E" />
+
+                    <!-- Row 5 (Selected Seat 5C) -->
+                    <text x="180" y="368" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">5</text>
+                    <use href="#seat-cc" x="72" y="360" id="seat-CC-5A" />
+                    <use href="#seat-cc" x="108" y="360" id="seat-CC-5B" />
+                    <use href="#seat-cc-highlighted" x="144" y="360" id="seat-CC-5C" />
+                    <use href="#seat-cc" x="250" y="360" id="seat-CC-5D" />
+                    <use href="#seat-cc" x="286" y="360" id="seat-CC-5E" />
+
+                    <!-- Row 6 -->
+                    <text x="180" y="436" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">6</text>
+                    <use href="#seat-cc" x="72" y="428" id="seat-CC-6A" />
+                    <use href="#seat-cc" x="108" y="428" id="seat-CC-6B" />
+                    <use href="#seat-cc" x="144" y="428" id="seat-CC-6C" />
+                    <use href="#seat-cc" x="250" y="428" id="seat-CC-6D" />
+                    <use href="#seat-cc" x="286" y="428" id="seat-CC-6E" />
+
+                    <!-- Row 7 -->
+                    <text x="180" y="504" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">7</text>
+                    <use href="#seat-cc" x="72" y="496" id="seat-CC-7A" />
+                    <use href="#seat-cc" x="108" y="496" id="seat-CC-7B" />
+                    <use href="#seat-cc" x="144" y="496" id="seat-CC-7C" />
+                    <use href="#seat-cc" x="250" y="496" id="seat-CC-7D" />
+                    <use href="#seat-cc" x="286" y="496" id="seat-CC-7E" />
+
+                    <!-- Row 8 -->
+                    <text x="180" y="572" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">8</text>
+                    <use href="#seat-cc" x="72" y="564" id="seat-CC-8A" />
+                    <use href="#seat-cc" x="108" y="564" id="seat-CC-8B" />
+                    <use href="#seat-cc" x="144" y="564" id="seat-CC-8C" />
+                    <use href="#seat-cc" x="250" y="564" id="seat-CC-8D" />
+                    <use href="#seat-cc" x="286" y="564" id="seat-CC-8E" />
+
+                    <!-- Row 9 -->
+                    <text x="180" y="640" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">9</text>
+                    <use href="#seat-cc" x="72" y="632" id="seat-CC-9A" />
+                    <use href="#seat-cc" x="108" y="632" id="seat-CC-9B" />
+                    <use href="#seat-cc" x="144" y="632" id="seat-CC-9C" />
+                    <use href="#seat-cc" x="250" y="632" id="seat-CC-9D" />
+                    <use href="#seat-cc" x="286" y="632" id="seat-CC-9E" />
+
+                    <!-- Row 10 -->
+                    <text x="180" y="708" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">10</text>
+                    <use href="#seat-cc" x="72" y="700" id="seat-CC-10A" />
+                    <use href="#seat-cc" x="108" y="700" id="seat-CC-10B" />
+                    <use href="#seat-cc" x="144" y="700" id="seat-CC-10C" />
+                    <use href="#seat-cc" x="250" y="700" id="seat-CC-10D" />
+                    <use href="#seat-cc" x="286" y="700" id="seat-CC-10E" />
+
+                    <!-- Row 11 -->
+                    <text x="180" y="776" fill="#444b5b" font-family="system-ui, sans-serif" font-size="9" font-weight="600" text-anchor="middle">11</text>
+                    <use href="#seat-cc" x="72" y="768" id="seat-CC-11A" />
+                    <use href="#seat-cc" x="108" y="768" id="seat-CC-11B" />
+                    <use href="#seat-cc" x="144" y="768" id="seat-CC-11C" />
+                    <use href="#seat-cc" x="250" y="768" id="seat-CC-11D" />
+                    <use href="#seat-cc" x="286" y="768" id="seat-CC-11E" />
+                  </g>
+                </g>
+
+              </svg>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 60% Right: Train Selection List -->
+        <div class="trains-selection-pane">
+          <div class="pane-headline-row">
+            <div>
+              <h2 class="pane-heading">Select Train &amp; Class</h2>
+              <p class="pane-subheading">Choose your preferred train and class to preview live 2D coach model</p>
+            </div>
+            <div class="trains-count-tag" id="trains-count-tag">4 Trains Available</div>
+          </div>
+
+          <div class="trains-list" id="trains-list-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
       </div>
     </section>
 
