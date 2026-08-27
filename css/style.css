@@ -5,11 +5,12 @@
 */
 
 :root {
-  --bg-pure-black: #000000;
-  --bg-surface: #0a0a0d;
-  --bg-surface-elevated: #111115;
-  --bg-input: #15151a;
-  --bg-input-focus: #1d1d24;
+  font-size: 100%;
+  --bg-pure-black: #070a10;
+  --bg-surface: #10151d;
+  --bg-surface-elevated: #171d27;
+  --bg-input: #1b222d;
+  --bg-input-focus: #252e3b;
   
   --border-subtle: #232328;
   --border-medium: #35353d;
@@ -50,25 +51,37 @@ body {
   font-size: 13px; /* Scaled down for high-density elegance */
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, rgba(7, 12, 21, .78), rgba(7, 12, 21, .52)), url('https://i.ibb.co/F4WJh8ds/file-00000000808c8211adfe0bc59a6a138b.png') center / cover no-repeat;
+  opacity: 0;
+  transition: opacity .7s cubic-bezier(.16, 1, .3, 1);
+}
+
+body.home-view::before { opacity: 1; }
+
 /* ==========================================================================
    1. FULL-SPAN NOTCH HEADER & LOGO
    ========================================================================== */
 .notch-header {
   position: fixed;
-  top: 0;
+  top: 38px;
   left: 0;
   width: 100%;
   z-index: 1000;
-  background-color: rgba(0, 0, 0, 0.92);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background-color: rgba(7, 12, 20, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .notch-bar {
   max-width: 1300px;
   margin: 0 auto;
-  height: 68px;
+  height: 76px;
   padding: 0 28px;
   display: flex;
   align-items: center;
@@ -87,13 +100,21 @@ body {
 }
 
 .irctc-dual-logo {
-  height: 38px;
-  width: auto;
-  max-width: 290px;
+  height: 43px;
+  width: 43px;
+  max-width: 43px;
   object-fit: contain;
   display: block;
   filter: brightness(1.08);
+  transform: scale(1.6);
 }
+
+.irctc-logo-disc { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 5px 0 3px; border-radius: 50%; background: rgba(255, 255, 255, .88); box-shadow: 0 4px 12px rgba(0, 0, 0, .25); overflow: hidden; }
+
+.india-emblem-logo { height: 54px; width: 39px; object-fit: contain; filter: brightness(0) invert(1) opacity(.92); }
+.irctc-wordmark { display: flex; flex-direction: column; min-width: 0; margin-left: 2px; color: var(--text-primary); line-height: 1.08; }
+.irctc-wordmark strong { font-size: 17px; letter-spacing: 1.2px; }
+.irctc-wordmark small { max-width: 220px; margin-top: 3px; color: var(--text-secondary); font-size: 8px; font-weight: 700; line-height: 1.2; }
 
 .logo-fallback {
   display: none;
@@ -107,6 +128,8 @@ body {
 .logo-fallback-active .irctc-dual-logo {
   display: none;
 }
+
+.logo-fallback-active .irctc-wordmark { display: none; }
 
 .logo-fallback-active .logo-fallback {
   display: flex;
@@ -179,6 +202,25 @@ body {
   color: var(--text-primary);
   border-color: var(--text-secondary);
 }
+
+.gov-utility-bar { position: fixed; inset: 0 0 auto; z-index: 1001; min-height: 38px; color: #d8e2f0; background: #0d294b; border-bottom: 1px solid rgba(255, 255, 255, .16); }
+.gov-utility-inner { width: min(1300px, 100%); min-height: 38px; margin: 0 auto; padding: 6px 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.travel-advisory { font-size: 10.5px; font-weight: 600; line-height: 1.3; }
+.travel-advisory strong { color: #fff; }
+.utility-actions { display: flex; align-items: center; gap: 14px; flex: none; }
+.utility-time { color: #fff; font: 700 10px var(--font-mono); white-space: nowrap; }
+.font-size-controls { display: inline-flex; overflow: hidden; border: 1px solid rgba(255, 255, 255, .38); border-radius: 5px; }
+.font-size-btn { min-width: 26px; height: 23px; border: 0; border-right: 1px solid rgba(255, 255, 255, .24); background: transparent; color: #fff; font: 800 10px var(--font-sf); cursor: pointer; }
+.font-size-btn:last-child { border-right: 0; }
+.font-size-btn:hover, .font-size-btn.active { color: #0d294b; background: #fff; }
+.user-menu { position: relative; }
+.user-menu-trigger { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 4px 7px 4px 5px; background: var(--bg-surface-elevated); color: var(--text-primary); cursor: pointer; font: 800 12px var(--font-sf); }
+.user-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-green); color: #07130b; font-size: 11px; }
+.user-menu-chevron { color: var(--text-secondary); font-size: 10px; }
+.user-menu-panel { position: absolute; top: calc(100% + 9px); right: 0; z-index: 1100; width: 138px; padding: 6px; background: #16171c; border: 1px solid var(--border-medium); border-radius: 10px; box-shadow: 0 16px 28px rgba(0, 0, 0, .45); }
+.user-menu-panel[hidden] { display: none; }
+.user-menu-panel .btn-logout { width: 100%; border: 0; border-radius: 7px; padding: 9px; text-align: left; }
+.user-menu-panel .btn-logout:hover { background: rgba(255, 255, 255, .08); }
 
 /* ==========================================================================
    FAKE REALISTIC BUFFERING / SERVER OVERLAY
@@ -305,7 +347,7 @@ body {
   width: 100%;
   max-width: 980px; /* Scaled down */
   margin: 0 auto;
-  padding: 96px 20px 60px;
+  padding: 142px 20px 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -404,6 +446,34 @@ body {
   box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.8);
 }
 
+body.home-view .main-search-card { background: rgba(4, 7, 12, .76); border-color: rgba(205, 220, 232, .25); box-shadow: 0 20px 42px rgba(0, 0, 0, .5); }
+body.home-view .main-search-card .card-head { border-bottom: 1px solid rgba(208, 230, 241, .14); padding-bottom: 14px; }
+body.home-view .main-search-card .input-block input, body.home-view .main-search-card .input-block select { background: rgba(9, 15, 24, .9); border-color: #2d4357; }
+body.home-view .main-search-card .input-block input:focus, body.home-view .main-search-card .input-block select:focus { border-color: #84b3cd; background: #0c131d; }
+body.home-view .main-search-card .btn-primary-action { background: #e7f1f5; color: #102132; }
+body.home-view .main-search-card .btn-primary-action:hover { background: #fff; }
+
+.site-footer { display: none; width: 100%; margin-top: auto; color: #dfeaf2; background: #0a1826; border-top: 1px solid rgba(196, 219, 235, .18); }
+body.home-view .site-footer { display: block; animation: footerReveal .45s ease; }
+.footer-inner { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 30px; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 30px; }
+.footer-kicker { color: #80b6d7; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .85px; }
+.footer-intro h2 { margin: 8px 0 6px; color: #fff; font-size: 22px; letter-spacing: -.5px; }
+.footer-intro p, .footer-contact p { color: #9eb1c0; font-size: 11px; line-height: 1.55; }
+.footer-socials { display: flex; gap: 8px; margin-top: 16px; }
+.footer-socials a { display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid #2d4a60; border-radius: 50%; color: #dfeaf2; text-decoration: none; transition: var(--transition); }
+.footer-socials a:hover { color: #0a1826; background: #dfeaf2; transform: translateY(-2px); }
+.social-glyph { display: block; color: currentColor; font-family: Arial, sans-serif; font-size: 15px; font-weight: 900; line-height: 1; }
+.facebook-glyph { font-size: 19px; transform: translateY(1px); }
+.linkedin-glyph { font-size: 11px; letter-spacing: -1px; }
+.instagram-glyph { font-size: 22px; font-weight: 400; transform: translateY(-1px); }
+.youtube-glyph { font-size: 12px; }
+.footer-links, .footer-contact { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+.site-footer h3 { margin-bottom: 3px; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: .7px; }
+.site-footer a { color: #a9bdcc; font-size: 11px; font-weight: 700; text-decoration: none; }
+.site-footer a:hover { color: #fff; }
+.footer-bottom { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 14px 0 18px; border-top: 1px solid rgba(196, 219, 235, .12); color: #6f879a; font-size: 10px; }
+@keyframes footerReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
 .card-head {
   display: flex;
   align-items: center;
@@ -468,6 +538,16 @@ body {
   outline: none;
   transition: var(--transition);
   width: 100%;
+}
+
+.input-block select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 42px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  background-size: 15px;
 }
 
 .input-block input:focus,
@@ -1503,6 +1583,36 @@ body {
 
 .upi-input-row input {
   flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #33465b;
+  border-radius: 10px;
+  outline: none;
+  background: #0c1520;
+  color: var(--text-primary);
+  font: 700 13px var(--font-sf);
+  transition: var(--transition);
+}
+
+.upi-input-row input::placeholder {
+  color: #78879a;
+  font-weight: 600;
+}
+
+.upi-input-row input:hover {
+  border-color: #526980;
+}
+
+.upi-input-row input:focus {
+  border-color: var(--accent-blue);
+  background: #101d2a;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, .14);
+}
+
+.upi-input-row input.is-verified {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .12);
 }
 
 .btn-verify-upi {
@@ -1514,7 +1624,11 @@ body {
   font-weight: 800;
   font-size: 12px;
   cursor: pointer;
+  transition: var(--transition);
 }
+
+.btn-verify-upi:hover { border-color: var(--accent-blue); background: #1b2a3a; }
+.btn-verify-upi:active { transform: translateY(1px); }
 
 .btn-generate-qr {
   width: 100%;
@@ -2860,15 +2974,62 @@ body {
 }
 
 @media (max-width: 768px) {
-  .notch-bar { height: 60px; padding: 0 14px; }
+  .gov-utility-bar { position: relative; }
+  .gov-utility-inner { min-height: 0; padding: 8px 12px; align-items: flex-start; gap: 8px; }
+  .travel-advisory { font-size: 9px; }
+  .utility-actions { gap: 7px; flex-direction: column; align-items: flex-end; }
+  .utility-time { font-size: 8px; }
+  .font-size-btn { min-width: 24px; height: 21px; }
+  .notch-header { position: sticky; top: 0; }
+  .notch-bar { height: 66px; padding: 0 12px; }
   .notch-center-nav { display: none; }
-  .irctc-dual-logo { height: 30px; }
+  .india-emblem-logo { height: 42px; width: 30px; }
+  .irctc-logo-disc { width: 45px; height: 45px; margin-right: 4px; }
+  .irctc-dual-logo { height: 36px; width: 36px; max-width: 36px; }
+  .irctc-wordmark strong { font-size: 14px; }
+  .irctc-wordmark small { max-width: 150px; font-size: 6.5px; }
+  .user-menu-trigger { padding-right: 5px; }
+  .user-menu-trigger .user-name-display, .user-menu-chevron { display: none; }
+  .booking-app-container { padding: 22px 12px 38px; }
+  .booking-stepper { justify-content: flex-start; gap: 10px; margin-bottom: 14px; padding: 6px 4px 9px; -webkit-overflow-scrolling: touch; }
+  .stepper-line { width: 12px; flex: 0 0 12px; }
+  .step-label { font-size: 10px; }
+  .booking-card { padding: 18px 14px; border-radius: 14px; }
+  .card-head.with-tabs { align-items: flex-start; gap: 12px; }
+  .card-nav-tabs { max-width: calc(100% - 80px); overflow-x: auto; }
+  .card-tab-btn { white-space: nowrap; padding: 7px 9px; font-size: 10px; }
+  .card-tag { flex: none; padding: 3px 7px; font-size: 8px; }
   .station-search-row { flex-direction: column; }
-  .swap-button-col { padding-top: 0; }
+  .swap-button-col { padding: 0; height: 20px; z-index: 2; }
+  .btn-swap-stations { width: 34px; height: 34px; }
   .search-filters-row { grid-template-columns: 1fr; }
+  .search-action-block { justify-content: stretch; }
+  .search-action-block .btn-primary-action { width: 100%; min-height: 46px; }
+  .view-header-bar { align-items: stretch; }
+  .search-summary-pill, .selected-train-pill { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trains-split-container, .trains-split-container.state-split { display: block; margin-top: 4px; }
+  .trains-svg-pane { display: none; }
+  .trains-split-container.state-split .trains-svg-pane { position: relative; top: auto; display: flex; width: 100%; min-width: 0; max-width: 100%; height: 286px; max-height: 286px; margin: 0 auto 18px; border: 1px solid var(--border-subtle); border-radius: 14px; background: #0d131c; animation: mobile-preview-stage .45s cubic-bezier(.16, 1, .3, 1); }
+  .trains-split-container.state-split .train-pure-viewport { width: 100%; justify-content: flex-start; }
+  .trains-split-container.state-split .train-svg-slider { width: 300px; flex: 0 0 300px; margin-left: calc(50% - 150px); transition: transform .75s cubic-bezier(.16, 1, .3, 1), opacity .35s ease; }
+  .trains-selection-pane { max-height: none; overflow: visible; padding: 0; }
+  .train-card { padding: 15px; border-radius: 14px; }
+  .train-card-header { gap: 10px; align-items: flex-start; }
+  .train-run-days { display: none; }
+  .train-schedule-grid { grid-template-columns: 1fr .8fr 1fr; gap: 6px; }
+  .time-big { font-size: 17px; }
+  .train-classes-scroll { padding-bottom: 5px; }
+  .class-fare-box { min-width: 132px; }
   .review-layout-grid { grid-template-columns: 1fr; }
   .form-row, .form-row.three-col { grid-template-columns: 1fr; }
   .ticket-route-grid { grid-template-columns: 1fr; gap: 10px; text-align: center; }
   .ticket-route-col.right-align { text-align: center; }
   .calendar-dropdown-popup { width: 100%; max-width: 320px; }
+  .footer-inner { width: calc(100% - 28px); padding: 30px 0 24px; grid-template-columns: 1fr 1fr; gap: 25px 18px; }
+  .footer-intro { grid-column: 1 / -1; }
+  .footer-intro h2 { font-size: 20px; }
+  .footer-contact { grid-column: 1 / -1; }
+  .footer-bottom { width: calc(100% - 28px); }
 }
+
+@keyframes mobile-preview-stage { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }

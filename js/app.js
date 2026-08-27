@@ -33,6 +33,7 @@ function initApp() {
   initCaptcha();
   initLoginForm();
   initRegisterForm();
+  initUtilityBar();
 
   // Initialize Ticket Booking System & Station Autocomplete
   initBookingEngine();
@@ -41,6 +42,29 @@ function initApp() {
   if (window.lucide) {
     window.lucide.createIcons();
   }
+}
+
+function initUtilityBar() {
+  const timeEl = document.getElementById('utility-live-time');
+  const renderTime = () => {
+    if (!timeEl) return;
+    const now = new Date();
+    const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = now.toLocaleTimeString('en-GB', { hour12: false });
+    timeEl.textContent = `${date} | ${time}`;
+  };
+  renderTime();
+  window.setInterval(renderTime, 1000);
+
+  const scales = { small: '0.92', default: '1', large: '1.08' };
+  const savedScale = localStorage.getItem('irctc_font_scale') || 'default';
+  const applyScale = (scale) => {
+    document.body.style.zoom = scales[scale];
+    document.querySelectorAll('.font-size-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.fontScale === scale));
+    localStorage.setItem('irctc_font_scale', scale);
+  };
+  applyScale(savedScale);
+  document.querySelectorAll('.font-size-btn').forEach(btn => btn.addEventListener('click', () => applyScale(btn.dataset.fontScale)));
 }
 
 // Safely initialize whether DOM is already parsed or still loading
@@ -535,12 +559,32 @@ function updateNotchAuthState() {
 
   if (currentUser) {
     const displayName = currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : currentUser.username;
+    const initials = displayName.split(/\s+/).map(name => name[0]).join('').slice(0, 2).toUpperCase();
     container.innerHTML = `
-      <div class="user-profile-badge">
-        <span class="user-name-display">${displayName}</span>
-        <button class="btn-logout" id="logout-btn">LOGOUT</button>
+      <div class="user-menu">
+        <button class="user-menu-trigger" id="user-menu-trigger" type="button" aria-expanded="false" aria-controls="user-menu-panel">
+          <span class="user-avatar" aria-hidden="true">${initials}</span>
+          <span class="user-name-display">${displayName}</span><span class="user-menu-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="user-menu-panel" id="user-menu-panel" hidden>
+          <button class="btn-logout" id="logout-btn" type="button">LOGOUT</button>
+        </div>
       </div>
     `;
+
+    const trigger = document.getElementById('user-menu-trigger');
+    const panel = document.getElementById('user-menu-panel');
+    trigger?.addEventListener('click', () => {
+      const isOpen = !panel.hidden;
+      panel.hidden = isOpen;
+      trigger.setAttribute('aria-expanded', String(!isOpen));
+    });
+    document.addEventListener('click', (event) => {
+      if (!container.contains(event.target)) {
+        panel.hidden = true;
+        trigger?.setAttribute('aria-expanded', 'false');
+      }
+    });
 
     document.getElementById('logout-btn')?.addEventListener('click', () => {
       currentUser = null;

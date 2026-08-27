@@ -14,26 +14,37 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<body>
+<body class="home-view">
 
   <!-- Top Browser-Style Thin Progress Bar (Grey/Charcoal) -->
   <div id="top-progress-bar" class="top-progress-bar">
     <div class="top-progress-fill" id="top-progress-fill"></div>
   </div>
 
+  <div class="gov-utility-bar" role="region" aria-label="Travel advisory and accessibility controls">
+    <div class="gov-utility-inner">
+      <p class="travel-advisory"><strong>Travel Advisory:</strong> Passengers are advised to check the latest train running status, platform information, and coach position before commencing their journey.</p>
+      <div class="utility-actions">
+        <time id="utility-live-time" class="utility-time" aria-label="Current date and time">27-08-2026 | 16:54:58</time>
+        <div class="font-size-controls" role="group" aria-label="Adjust text size">
+          <button type="button" class="font-size-btn" data-font-scale="small" aria-label="Decrease text size">A−</button><button type="button" class="font-size-btn active" data-font-scale="default" aria-label="Reset text size">A</button><button type="button" class="font-size-btn" data-font-scale="large" aria-label="Increase text size">A+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Top Full-Span Notch Header -->
   <header class="notch-header">
     <div class="notch-bar">
-      <!-- Left: Enlarged IRCTC Dual Logo -->
+      <!-- Left: National and IRCTC branding -->
       <div class="notch-left">
         <a href="#" class="logo-link" id="nav-home-btn">
-          <img src="https://1000logos.net/wp-content/uploads/2022/02/IRCTC-logo-1536x864.png"
-            alt="IRCTC & Indian Railways" class="irctc-dual-logo"
-            onerror="this.parentElement.classList.add('logo-fallback-active')" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Emblem_of_India_%28navy_blue%29.svg" alt="Emblem of India" class="india-emblem-logo" />
+          <span class="irctc-logo-disc"><img src="https://1000logos.net/wp-content/uploads/2022/02/IRCTC-logo-1536x864.png"
+            alt="IRCTC" class="irctc-dual-logo" onerror="this.parentElement.parentElement.classList.add('logo-fallback-active')" /></span>
+          <span class="irctc-wordmark"><strong>IRCTC</strong><small>Indian Railway Catering and Tourism Corporation</small></span>
           <div class="logo-fallback">
             <span class="logo-badge">IRCTC</span>
-            <span class="logo-divider"></span>
-            <span class="logo-badge secondary">INDIAN RAILWAYS</span>
           </div>
         </a>
       </div>
@@ -968,6 +979,27 @@
     </section>
 
   </main>
+
+  <footer class="site-footer" aria-label="IRCTC information and links">
+    <div class="footer-inner">
+      <section class="footer-intro">
+        <span class="footer-kicker">Indian Railway Catering and Tourism Corporation</span>
+        <h2>Travel with confidence.</h2>
+        <p>Book rail journeys, manage tickets, and get assistance when you need it.</p>
+        <div class="footer-socials" aria-label="IRCTC social media">
+          <a href="https://m.facebook.com/IRCTCofficial/" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on Facebook"><span class="social-glyph facebook-glyph">f</span></a>
+          <a href="https://www.linkedin.com/company/irctcofficial" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on LinkedIn"><span class="social-glyph linkedin-glyph">in</span></a>
+          <a href="https://www.instagram.com/irctc.official/" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on Instagram"><span class="social-glyph instagram-glyph">◎</span></a>
+          <a href="https://x.com/IRCTCofficial" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on X"><span class="social-glyph">𝕏</span></a>
+          <a href="https://www.youtube.com/@IRCTCOFFICIAL" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on YouTube"><span class="social-glyph youtube-glyph">▶</span></a>
+        </div>
+      </section>
+      <section class="footer-links"><h3>Important links</h3><a href="https://contents.irctc.co.in/en/ContactUsEn.html" target="_blank" rel="noopener noreferrer">Contact Us</a><a href="https://equery.irctc.co.in/" target="_blank" rel="noopener noreferrer">eQuery / Support</a><a href="https://contents.irctc.co.in/en/privacypolicy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a><a href="https://contents.irctc.co.in/en/Terms%20and%20conditions.pdf" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a></section>
+      <section class="footer-links"><h3>IRCTC services</h3><a href="https://www.ecatering.irctc.co.in/" target="_blank" rel="noopener noreferrer">eCatering</a><a href="https://www.tourism.irctc.co.in/" target="_blank" rel="noopener noreferrer">IRCTC Tourism</a><a href="https://www.air.irctc.co.in/" target="_blank" rel="noopener noreferrer">IRCTC Air</a><a href="https://www.bus.irctc.co.in/" target="_blank" rel="noopener noreferrer">IRCTC Bus</a></section>
+      <section class="footer-contact"><h3>Need help?</h3><a href="tel:14646">Rail ticket support: 14646</a><a href="mailto:etickets@irctc.co.in">etickets@irctc.co.in</a><p>Outside India<br><strong>+91 8044647999</strong></p></section>
+    </div>
+    <div class="footer-bottom">© 2026 IRCTC. A Government of India enterprise.</div>
+  </footer>
 
   <!-- ================= AUTH MODAL ================= -->
   <div class="modal-overlay" id="auth-modal" aria-hidden="true">

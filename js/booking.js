@@ -218,6 +218,7 @@ export function switchView(viewName) {
     const el = document.getElementById(`view-${v}`);
     if (el) el.style.display = (v === viewName) ? 'block' : 'none';
   });
+  document.body.classList.toggle('home-view', viewName === 'search');
 
   const stepper = document.getElementById('booking-stepper');
   if (viewName === 'pnr') {
@@ -543,6 +544,7 @@ function handleSearchSubmit(e) {
 
   // Initialize fresh session with dynamic availability and assigned seats
   initSearchSession();
+  document.body.classList.remove('home-view');
 
   triggerTopProgress(500, () => {
     renderTrainsList();
@@ -654,17 +656,20 @@ export function updateTrainShowcase(trainNumber, classCode) {
     const seatInfo = assignDynamicSeat(trainNumber, classCode);
 
     if (slider) {
+      const isMobilePreview = window.matchMedia('(max-width: 768px)').matches;
       if (classCode === 'CC') {
         slider.className = 'train-svg-slider state-cc';
         // If bottom seat row > 6, shift train up slightly to keep seat visible in center
         const offset = seatInfo.row > 6 ? -870 - (seatInfo.row - 6) * 55 : -870;
-        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
+        slider.style.transform = isMobilePreview ? `translate3d(380px, ${offset}px, 0)` : `translate3d(0, ${offset}px, 0)`;
+        if (isMobilePreview) window.setTimeout(() => { slider.style.transform = `translate3d(0, ${offset}px, 0)`; }, 30);
       } else {
         // EC
         slider.className = 'train-svg-slider state-ec';
         // If bottom seat row > 5, shift train up slightly to keep seat visible in center
         const offset = seatInfo.row > 5 ? -(seatInfo.row - 5) * 55 : 0;
-        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
+        slider.style.transform = isMobilePreview ? `translate3d(380px, ${offset}px, 0)` : `translate3d(0, ${offset}px, 0)`;
+        if (isMobilePreview) window.setTimeout(() => { slider.style.transform = `translate3d(0, ${offset}px, 0)`; }, 30);
       }
     }
 
@@ -1651,10 +1656,13 @@ function initPaymentTabs() {
   });
 
   document.getElementById('btn-verify-upi')?.addEventListener('click', () => {
-    const val = document.getElementById('upi-id-input').value.trim();
+    const upiInput = document.getElementById('upi-id-input');
+    const val = upiInput.value.trim();
     if (val.includes('@')) {
+      upiInput.classList.add('is-verified');
       showToast(`UPI ID ${val} verified!`);
     } else {
+      upiInput.classList.remove('is-verified');
       showToast('Please enter a valid UPI ID (e.g. name@bank)');
     }
   });
