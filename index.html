@@ -1123,10 +1123,10 @@
 
       <div class="modal-body">
         <!-- Status / Alert Message -->
-        <div class="auth-alert" id="auth-alert" style="display: none;"></div>
+        <div class="auth-alert" id="auth-alert" role="alert" aria-live="assertive" style="display: none;"></div>
 
         <!-- ================= LOGIN FORM ================= -->
-        <form id="login-form" class="auth-form active">
+        <form id="login-form" class="auth-form active" novalidate>
           <div class="form-group">
             <label for="login-username">Email Address *</label>
             <input type="email" id="login-username" placeholder="Enter registered email address" required autocomplete="email">

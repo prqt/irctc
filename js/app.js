@@ -219,13 +219,16 @@ function switchTab(mode) {
 
 function showAlert(message, type = 'error') {
   const alert = document.getElementById('auth-alert');
+  if (!alert) return;
   alert.textContent = message;
   alert.className = `auth-alert ${type}`;
   alert.style.display = 'block';
+  alert.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function hideAlert() {
   const alert = document.getElementById('auth-alert');
+  if (!alert) return;
   alert.style.display = 'none';
   alert.textContent = '';
 }
@@ -250,6 +253,20 @@ function initLoginForm() {
     const email = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
     const captcha = document.getElementById('login-captcha-input').value.trim();
+    const submitButton = document.getElementById('login-submit-btn');
+
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      showAlert('Please enter a valid registered email address.');
+      return;
+    }
+    if (!password) {
+      showAlert('Please enter your password.');
+      return;
+    }
+    if (!captcha) {
+      showAlert('Please enter the Security Captcha code.');
+      return;
+    }
 
     // Captcha validation
     if (captcha.toLowerCase() !== loginCaptchaCode.toLowerCase()) {
@@ -261,14 +278,31 @@ function initLoginForm() {
     if (email.toLowerCase() === JUDGE_DEMO_ACCOUNT.email && password === JUDGE_DEMO_ACCOUNT.password) {
       startJudgeSession();
       return;
-    } else {
-      try {
-        await signInWithEmail(email, password);
-        currentUser = await getAuthenticatedUser();
-      } catch (error) {
-        showAlert(error.message || 'Invalid email address or password.');
-        refreshLoginCaptcha();
-        return;
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'SIGNING IN…';
+    }
+    try {
+      const signedInUser = await signInWithEmail(email, password);
+      currentUser = await getAuthenticatedUser() || {
+        id: signedInUser.id,
+        username: signedInUser.user_metadata?.username || signedInUser.email,
+        firstName: signedInUser.user_metadata?.first_name || '',
+        lastName: signedInUser.user_metadata?.last_name || '',
+        email: signedInUser.email,
+        mobile: signedInUser.user_metadata?.mobile || ''
+      };
+      if (!currentUser) throw new Error('We could not establish your session. Please try again.');
+    } catch (error) {
+      showAlert(error?.message || 'Invalid email address or password.');
+      refreshLoginCaptcha();
+      return;
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'SIGN IN';
       }
     }
 
