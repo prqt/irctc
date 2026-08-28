@@ -1153,6 +1153,11 @@ body.home-view .site-footer {
 
 .train-svg-slider.state-mobile-horizontal { opacity: 1; visibility: visible; }
 
+.standard-train-slider { position: absolute; inset: 0 auto auto 0; width: 360px; opacity: 1; visibility: visible; transition: transform 1s cubic-bezier(.19, 1, .22, 1), opacity .35s ease; will-change: transform; filter: drop-shadow(0 15px 35px rgba(0, 0, 0, .75)); }
+.standard-train-slider.state-hidden { opacity: 0; visibility: hidden; transform: translate3d(0, 100vh, 0); }
+.standard-train-svg { display: block; width: 100%; }
+.mobile-train-preview { display: none; }
+
 /* 60% Right: Train Selection Pane (Scrolls independently without moving the train SVG) */
 .trains-selection-pane {
   flex: 1;
@@ -3551,6 +3556,49 @@ body.home-view .site-footer {
   }
 }
 
+/* Tablet layouts use the same in-list, horizontal train preview as phones. */
+@media (min-width: 769px) and (max-width: 992px) {
+  .trains-split-container,
+  .trains-split-container.state-split {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .trains-svg-pane {
+    display: none !important;
+  }
+
+  .mobile-train-preview {
+    display: none;
+    position: relative;
+    height: 245px;
+    margin: 2px 0 14px;
+    overflow: hidden;
+    background: transparent;
+  }
+
+  .mobile-train-preview.is-active {
+    display: block;
+    animation: mobile-preview-stage .45s cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .mobile-train-preview .train-svg-slider,
+  .mobile-train-preview .standard-train-slider {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 360px;
+    max-width: none;
+    margin: 0 0 0 -180px;
+    will-change: transform;
+    transition: transform .78s cubic-bezier(.16, 1, .3, 1), opacity .35s ease;
+  }
+
+  .mobile-train-preview .standard-train-slider {
+    inset: 0 auto auto 50%;
+  }
+}
+
 @media (max-width: 768px) {
   .gov-utility-bar {
     position: relative;
@@ -3762,6 +3810,8 @@ body.home-view .site-footer {
     transform-origin: center center;
   }
 
+  .standard-train-slider { width: 360px; left: 50%; margin-left: -180px; }
+
   .trains-selection-pane {
     max-height: none;
     overflow: visible;
@@ -3771,6 +3821,36 @@ body.home-view .site-footer {
   .train-card {
     padding: 15px;
     border-radius: 14px;
+  }
+
+  .mobile-train-preview {
+    display: none;
+    position: relative;
+    height: 245px;
+    margin: 2px 0 14px;
+    overflow: hidden;
+    background: transparent;
+  }
+
+  .mobile-train-preview.is-active {
+    display: block;
+    animation: mobile-preview-stage .45s cubic-bezier(.16, 1, .3, 1);
+  }
+
+  .mobile-train-preview .train-svg-slider,
+  .mobile-train-preview .standard-train-slider {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 360px;
+    max-width: none;
+    margin: 0 0 0 -180px;
+    will-change: transform;
+    transition: transform .78s cubic-bezier(.16, 1, .3, 1), opacity .35s ease;
+  }
+
+  .mobile-train-preview .standard-train-slider {
+    inset: 0 auto auto 50%;
   }
 
   .train-card-header {

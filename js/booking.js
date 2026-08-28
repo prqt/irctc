@@ -647,9 +647,20 @@ export function assignDynamicSeat(trainNumber, classCode) {
     initSearchSession();
   }
 
-  const isVandeBharat = trainNumber === '22436';
-  if (!isVandeBharat) {
-    return { coach: classCode, seatNumber: 'AVL', berthType: 'Available' };
+  const isChairCarTrain = ['22436', '12002'].includes(trainNumber);
+  if (!isChairCarTrain) {
+    const key = `${trainNumber}-${classCode}`;
+    if (!bookingState.sessionData.standardSeats) bookingState.sessionData.standardSeats = {};
+    if (!bookingState.sessionData.standardSeats[key]) {
+      const berthCount = classCode === '1A' ? 24 : (classCode === '2A' ? 46 : (classCode === '3A' ? 64 : 72));
+      const seatNumber = Math.floor(Math.random() * berthCount) + 1;
+      const berthsPerBay = classCode === '1A' ? 3 : (classCode === '2A' ? 6 : 8);
+      bookingState.sessionData.standardSeats[key] = {
+        coach: classCode === '1A' ? 'H1' : (classCode === '2A' ? 'A1' : (classCode === '3A' ? 'B1' : 'S1')),
+        row: Math.ceil(seatNumber / berthsPerBay), seatNumber: String(seatNumber), berthType: standardBerthType(classCode, seatNumber)
+      };
+    }
+    return bookingState.sessionData.standardSeats[key];
   }
 
   if (classCode === 'EC') {
@@ -691,31 +702,111 @@ export function assignDynamicSeat(trainNumber, classCode) {
   }
 }
 
+function standardBerthType(classCode, number) {
+  if (classCode === '1A') return number % 2 ? 'Lower Berth' : 'Upper Berth';
+  if (classCode === '2A') return ['Lower Berth', 'Upper Berth', 'Lower Berth', 'Upper Berth', 'Side Lower', 'Side Upper'][(number - 1) % 6];
+  return ['Lower Berth', 'Middle Berth', 'Upper Berth', 'Lower Berth', 'Middle Berth', 'Upper Berth', 'Side Lower', 'Side Upper'][(number - 1) % 8];
+}
+
+function createStandardTrainModel(train, selectedClass, seatInfo) {
+  const classOrder = ['1A', '2A', '3A', 'SL'];
+  const classes = train.classes.filter(item => classOrder.includes(item.code)).sort((a, b) => classOrder.indexOf(a.code) - classOrder.indexOf(b.code));
+  const coachHeight = 1180;
+  const totalHeight = classes.length * coachHeight;
+  const berth = (x, y, label, active) => `<g><rect x="${x - 20}" y="${y - 11}" width="40" height="22" rx="8" fill="${active ? '#18402e' : '#30394a'}" stroke="${active ? '#10b981' : '#505d73'}" stroke-width="${active ? '2' : '1.1'}"/><rect x="${x - 13}" y="${y - 6}" width="26" height="4" rx="2" fill="${active ? '#34d399' : '#818da4'}"/><text x="${x}" y="${y + 5}" text-anchor="middle" fill="#dbe5ef" font-family="system-ui" font-size="7" font-weight="800">${label}</text></g>`;
+  const coach = (cls, index) => {
+    const y = index * coachHeight + 16;
+    const active = number => cls.code === selectedClass && seatInfo.seatNumber === String(number);
+    const shell = index === 0 ? `<path d="M35 ${y + 1120} V${y + 90} Q35 ${y + 48} 90 ${y + 32} Q180 ${y + 16} 270 ${y + 32} Q325 ${y + 48} 325 ${y + 90} V${y + 1120}Z"/>` : `<rect x="35" y="${y + 30}" width="290" height="1090" rx="22"/>`;
+    let map = '';
+    if (cls.code === '1A') {
+      const rooms = [['CABIN', 4], ['COUPE', 2], ['COUPE', 2], ['COUPE', 2], ['CABIN', 4], ['COUPE', 2], ['CABIN', 4], ['CABIN', 4]];
+      let n = 1;
+      rooms.forEach(([type, count], row) => {
+        const by = y + 130 + row * 112;
+        map += `<line x1="55" y1="${by - 45}" x2="305" y2="${by - 45}" stroke="#374256" stroke-width="1.2"/><text x="180" y="${by - 29}" text-anchor="middle" fill="#66748a" font-family="system-ui" font-size="6" letter-spacing="1">${type}</text>`;
+        if (count === 4) { map += berth(115, by - 6, 'L', active(n++)); map += berth(245, by - 6, 'L', active(n++)); map += berth(115, by + 27, 'U', active(n++)); map += berth(245, by + 27, 'U', active(n++)); }
+        else { map += berth(115, by + 10, 'L', active(n++)); map += berth(245, by + 10, 'U', active(n++)); }
+      });
+    } else {
+      const perBay = cls.code === '2A' ? 6 : 8;
+      const total = cls.code === '2A' ? 46 : (cls.code === '3A' ? 64 : 72);
+      const bays = Math.ceil(total / perBay);
+      let n = 1;
+      for (let bay = 0; bay < bays; bay += 1) {
+        const by = y + 118 + bay * ((1050) / bays);
+        map += `<line x1="55" y1="${by - 43}" x2="305" y2="${by - 43}" stroke="#374256" stroke-width="1.2"/><line x1="212" y1="${by - 31}" x2="212" y2="${by + 43}" stroke="#3a4558" stroke-width="8"/>`;
+        const add = (x, yy, label) => { if (n <= total) map += berth(x, yy, label, active(n++)); };
+        if (cls.code === '2A') { add(82, by - 12, 'L'); add(138, by - 12, 'U'); add(82, by + 20, 'L'); add(138, by + 20, 'U'); add(278, by - 12, 'SL'); add(278, by + 20, 'SU'); }
+        else { ['L', 'M', 'U'].forEach((label, tier) => add(76 + tier * 48, by - 25, label)); ['L', 'M', 'U'].forEach((label, tier) => add(76 + tier * 48, by + 23, label)); add(278, by - 12, 'SL'); add(278, by + 20, 'SU'); }
+      }
+    }
+    return `<g><g fill="#11151c" stroke="#657188" stroke-width="2.2">${shell}</g><path d="M52 ${y + 76}H308V${y + 102}H52Z" fill="#1d2633"/><text x="62" y="${y + 65}" fill="#e3eaf3" font-family="system-ui" font-size="13" font-weight="800" letter-spacing="1">${cls.code}</text><text x="298" y="${y + 65}" text-anchor="end" fill="#718099" font-family="system-ui" font-size="7" letter-spacing=".8">COACH ${index + 1}</text>${map}<g stroke="#3d485b" stroke-width="1.5" opacity=".8"><line x1="58" y1="${y + 1080}" x2="302" y2="${y + 1080}"/><line x1="72" y1="${y + 1093}" x2="288" y2="${y + 1093}"/></g></g>`;
+  };
+  const coupler = index => {
+    const y = (index + 1) * coachHeight - 46;
+    return `<g aria-hidden="true"><rect x="110" y="${y}" width="140" height="90" rx="5" fill="#141720" stroke="#2a303e" stroke-width="2"/><line x1="125" y1="${y + 22}" x2="235" y2="${y + 22}" stroke="#414b60" stroke-width="2"/><line x1="125" y1="${y + 45}" x2="235" y2="${y + 45}" stroke="#414b60" stroke-width="2"/><line x1="125" y1="${y + 68}" x2="235" y2="${y + 68}" stroke="#414b60" stroke-width="2"/><rect x="164" y="${y + 8}" width="32" height="74" rx="3" fill="#0c0d12" stroke="#4b5568" stroke-width="2"/></g>`;
+  };
+  const trainBody = classes.map((cls, index) => `${coach(cls, index)}${index < classes.length - 1 ? coupler(index) : ''}`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 ${totalHeight}" class="standard-train-svg" role="img" aria-label="${train.name} authentic berth layout">${trainBody}</svg>`;
+}
+
+function showMobileTrainPreview(trainNumber, model, seatY, scale = 0.3) {
+  const target = document.getElementById(`mobile-train-preview-${trainNumber}`);
+  if (!target || !model) return;
+
+  document.querySelectorAll('.mobile-train-preview').forEach(preview => preview.classList.remove('is-active'));
+  target.appendChild(model);
+  target.classList.add('is-active');
+
+  // With a top-left origin, rotating the vertical diagram puts its y-axis on
+  // the horizontal stage. This centres the allocated seat before sliding in.
+  const horizontalOffset = 170 - seatY * scale;
+  model.style.transformOrigin = 'top left';
+  model.style.transform = `translate3d(${horizontalOffset + 500}px, 180px, 0) rotate(-90deg) scale(${scale})`;
+  window.setTimeout(() => {
+    model.style.transform = `translate3d(${horizontalOffset}px, 180px, 0) rotate(-90deg) scale(${scale})`;
+  }, 30);
+}
+
+function restoreMobileTrainPreview() {
+  const viewport = document.getElementById('train-pure-viewport');
+  if (!viewport) return;
+  ['train-svg-slider', 'standard-train-slider'].forEach(id => {
+    const model = document.getElementById(id);
+    if (model && model.parentElement !== viewport) viewport.appendChild(model);
+  });
+  document.querySelectorAll('.mobile-train-preview').forEach(preview => preview.classList.remove('is-active'));
+}
+
 export function updateTrainShowcase(trainNumber, classCode) {
-  const isVandeBharat = trainNumber === '22436';
+  const isChairCarTrain = ['22436', '12002'].includes(trainNumber);
+  const isMobilePreview = window.matchMedia('(max-width: 992px)').matches;
+  if (!isMobilePreview) restoreMobileTrainPreview();
   const splitContainer = document.getElementById('trains-split-container');
   const slider = document.getElementById('train-svg-slider');
+  const standardSlider = document.getElementById('standard-train-slider');
 
-  if (isVandeBharat) {
+  if (isChairCarTrain) {
     // Smoothly shift train selection list to right 60% and reveal left 40%
-    if (splitContainer) {
-      splitContainer.classList.add('state-split');
+    if (splitContainer) splitContainer.classList.toggle('state-split', !isMobilePreview);
+    if (standardSlider) { standardSlider.className = 'standard-train-slider state-hidden'; standardSlider.innerHTML = ''; }
+
+    const chairCarFront = document.getElementById('chair-car-front-hull');
+    if (chairCarFront) {
+      chairCarFront.setAttribute('d', trainNumber === '12002'
+        ? 'M 35 860 L 35 140 Q 35 58 105 32 Q 180 18 255 32 Q 325 58 325 140 L 325 860 Z'
+        : 'M 35 860 L 35 180 C 35 90, 90 15, 180 15 C 270 15, 325 90, 325 180 L 325 860 Z');
     }
 
     // Assign session-consistent seat
     const seatInfo = assignDynamicSeat(trainNumber, classCode);
 
     if (slider) {
-      const isMobilePreview = window.matchMedia('(max-width: 768px)').matches;
       if (isMobilePreview) {
         slider.className = 'train-svg-slider state-mobile-horizontal';
-        // A rotated mobile-only view. Track the allocated row so the selected
-        // seat stays near the center of the horizontal preview.
-        const rowSpacing = classCode === 'CC' ? 26 : 25;
-        const coachOffset = classCode === 'CC' ? -250 : 20;
-        const mobileOffset = coachOffset - (seatInfo.row - 1) * rowSpacing;
-        slider.style.transform = `translate3d(${mobileOffset + 430}px, 0, 0) rotate(-90deg) scale(.32)`;
-        window.setTimeout(() => { slider.style.transform = `translate3d(${mobileOffset}px, 0, 0) rotate(-90deg) scale(.32)`; }, 30);
+        const selectedY = classCode === 'CC' ? 972 + (seatInfo.row - 1) * 68 : 240 + (seatInfo.row - 1) * 65;
+        showMobileTrainPreview(trainNumber, slider, selectedY, 0.42);
         return seatInfo;
       }
       if (classCode === 'CC') {
@@ -737,7 +828,24 @@ export function updateTrainShowcase(trainNumber, classCode) {
 
     return seatInfo;
   } else {
-    // Non-Vande Bharat trains stay centered with hidden SVG
+    const train = TRAINS_DATA.find(item => item.number === trainNumber);
+    const hasSleeperCoach = train?.classes.some(item => ['1A', '2A', '3A', 'SL'].includes(item.code));
+    if (hasSleeperCoach && ['1A', '2A', '3A', 'SL'].includes(classCode)) {
+      if (splitContainer) splitContainer.classList.toggle('state-split', !isMobilePreview);
+      if (slider) { slider.className = 'train-svg-slider state-hidden'; slider.style.transform = 'translate3d(0, 120vh, 0)'; }
+      const seatInfo = assignDynamicSeat(trainNumber, classCode);
+      if (standardSlider) {
+        const classIndex = train.classes.filter(item => ['1A', '2A', '3A', 'SL'].includes(item.code)).sort((a, b) => ['1A', '2A', '3A', 'SL'].indexOf(a.code) - ['1A', '2A', '3A', 'SL'].indexOf(b.code)).findIndex(item => item.code === classCode);
+        standardSlider.innerHTML = createStandardTrainModel(train, classCode, seatInfo);
+        standardSlider.className = 'standard-train-slider';
+        const bayGap = classCode === '1A' ? 112 : (classCode === 'SL' ? (1050 / 9) : (1050 / 8));
+        const selectedY = classIndex * 1180 + (classCode === '1A' ? 130 : 118) + (seatInfo.row - 1) * bayGap;
+        if (isMobilePreview) showMobileTrainPreview(trainNumber, standardSlider, selectedY, 0.37);
+        else standardSlider.style.transform = `translate3d(0, ${380 - selectedY}px, 0)`;
+      }
+      return seatInfo;
+    }
+    // Chair-car trains stay centered with hidden SVG
     if (splitContainer) {
       splitContainer.classList.remove('state-split');
     }
@@ -745,6 +853,7 @@ export function updateTrainShowcase(trainNumber, classCode) {
       slider.className = 'train-svg-slider state-hidden';
       slider.style.transform = 'translate3d(0, 120vh, 0)';
     }
+    if (standardSlider) { standardSlider.className = 'standard-train-slider state-hidden'; standardSlider.innerHTML = ''; }
     return { coach: classCode, seatNumber: 'AVL', berthType: 'Available' };
   }
 }
@@ -781,6 +890,9 @@ function renderTrainsList() {
     slider.className = 'train-svg-slider state-hidden';
     slider.style.transform = 'translate3d(0, 120vh, 0)';
   }
+  const standardSlider = document.getElementById('standard-train-slider');
+  restoreMobileTrainPreview();
+  if (standardSlider) { standardSlider.className = 'standard-train-slider state-hidden'; standardSlider.innerHTML = ''; }
 
   TRAINS_DATA.forEach(train => {
     const card = document.createElement('div');
@@ -863,9 +975,8 @@ function renderTrainsList() {
 
         const actionBox = document.getElementById(`action-box-${trainNum}`);
         if (actionBox) {
-          const seatMatchText = (trainNum === '22436') 
-            ? `Seat ${seatInfo.seatNumber} (${seatInfo.berthType})` 
-            : 'Available Berth';
+          const hasCoachModel = ['22436', '12002'].includes(trainNum) || ['1A', '2A', '3A', 'SL'].includes(classCode);
+          const seatMatchText = hasCoachModel ? `Seat ${seatInfo.seatNumber} (${seatInfo.berthType})` : 'Available Berth';
 
           actionBox.innerHTML = `
             <button type="button" class="btn-check-avail" id="btn-avail-${trainNum}">
@@ -883,6 +994,11 @@ function renderTrainsList() {
       });
     });
 
+    const mobilePreview = document.createElement('div');
+    mobilePreview.className = 'mobile-train-preview';
+    mobilePreview.id = `mobile-train-preview-${train.number}`;
+    mobilePreview.setAttribute('aria-live', 'polite');
+    container.appendChild(mobilePreview);
     container.appendChild(card);
   });
   window.lucide?.createIcons();
@@ -1093,7 +1209,8 @@ function handlePassengersSubmit(e) {
 
   triggerTopProgress(400, () => {
     switchView('review');
-    showTearPreview();
+    // Let the review screen settle before introducing the instructional layer.
+    window.setTimeout(showTearPreview, 2000);
   });
 }
 
@@ -1276,18 +1393,20 @@ function initFreehandTear() {
   const ticketTop = () => pass.getBoundingClientRect().top - interactionZone.getBoundingClientRect().top;
 
   const hasSelfIntersection = (line) => {
+    // Touchscreens report many nearly-identical coalesced samples. Work with a
+    // lightly spaced display path here; the full raw trace still goes to DELBOT.
+    const spacedLine = line.reduce((result, point) => {
+      const previous = result.at(-1);
+      if (!previous || Math.hypot(point.x - previous.x, point.y - previous.y) >= 4) result.push(point);
+      return result;
+    }, []);
     const cross = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-    for (let i = 0; i < line.length - 1; i++) {
-      for (let j = i + 2; j < line.length - 1; j++) {
-        if (i === 0 && j === line.length - 2) continue;
-        const a = line[i], b = line[i + 1], c = line[j], d = line[j + 1];
+    for (let i = 0; i < spacedLine.length - 1; i++) {
+      for (let j = i + 2; j < spacedLine.length - 1; j++) {
+        if (i === 0 && j === spacedLine.length - 2) continue;
+        const a = spacedLine[i], b = spacedLine[i + 1], c = spacedLine[j], d = spacedLine[j + 1];
         const abC = cross(a, b, c), abD = cross(a, b, d), cdA = cross(c, d, a), cdB = cross(c, d, b);
         if (((abC > 0 && abD < 0) || (abC < 0 && abD > 0)) && ((cdA > 0 && cdB < 0) || (cdA < 0 && cdB > 0))) return true;
-      }
-    }
-    for (let i = 0; i < line.length; i++) {
-      for (let j = i + 8; j < line.length; j++) {
-        if (Math.hypot(line[i].x - line[j].x, line[i].y - line[j].y) < 8) return true;
       }
     }
     return false;
@@ -1540,7 +1659,12 @@ function initFreehandTear() {
   const recordPoint = (event, type = 'Move') => {
     const bounds = interactionZone.getBoundingClientRect();
     const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
-    points.push(point);
+    // Keep the rendered / geometry path stable on high-frequency mobile touch.
+    // DELBOT receives every raw event below, preserving its behavioural signal.
+    const previous = points.at(-1);
+    if (!previous || type !== 'Move' || Math.hypot(point.x - previous.x, point.y - previous.y) >= 2.5) {
+      points.push(point);
+    }
     recorder.addRecord({ time: event.timeStamp, x: event.clientX, y: event.clientY, type });
     drawTrajectory();
   };
