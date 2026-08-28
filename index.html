@@ -201,7 +201,7 @@
 
           <div class="search-action-block">
             <button type="submit" class="btn-primary-action" id="btn-search-trains">
-              SEARCH TRAINS &rarr;
+              SEARCH TRAINS <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
           </div>
         </form>
@@ -234,7 +234,7 @@
                 <input type="text" id="pnr-query-input" placeholder="Enter 10-digit PNR Number" maxlength="12" required
                   autocomplete="off">
                 <button type="submit" class="btn-pnr-submit" id="btn-submit-pnr">
-                  GET STATUS &rarr;
+                  GET STATUS <i data-lucide="arrow-right" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
@@ -714,7 +714,7 @@
 
           <div class="form-actions space-between">
             <button type="button" class="btn-nav-prev" id="btn-passengers-back">&larr; Back</button>
-            <button type="submit" class="btn-primary-action">Continue to Review &rarr;</button>
+            <button type="submit" class="btn-primary-action">Continue to Review <i data-lucide="arrow-right" aria-hidden="true"></i></button>
           </div>
         </form>
       </div>
@@ -930,7 +930,7 @@
 
           <div class="payment-action-block">
             <button type="submit" class="btn-primary-action" id="pay-submit-btn">
-              PAY &amp; CONFIRM BOOKING &rarr;
+              PAY &amp; CONFIRM BOOKING <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
           </div>
         </form>
@@ -1126,8 +1126,8 @@
         <!-- ================= LOGIN FORM ================= -->
         <form id="login-form" class="auth-form active">
           <div class="form-group">
-            <label for="login-username">User ID / Username *</label>
-            <input type="text" id="login-username" placeholder="Enter User ID" required autocomplete="username">
+            <label for="login-username">Email Address *</label>
+            <input type="email" id="login-username" placeholder="Enter registered email address" required autocomplete="email">
           </div>
 
           <div class="form-group">
@@ -1152,12 +1152,6 @@
           <button type="submit" class="btn-submit" id="login-submit-btn">SIGN IN</button>
 
           <div class="form-footer">
-            <div
-              style="font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; text-align: center;">
-              <i data-lucide="info" style="width:11px;height:11px;vertical-align:middle;"></i> <strong>Demo
-                Account:</strong> User ID: <code style="color:var(--accent-orange); font-weight:600;">pratham</code> |
-              Password: <code style="color:var(--accent-orange); font-weight:600;">Password@123</code>
-            </div>
             <p>New to IRCTC? <a href="#" id="switch-to-register">Register an account</a></p>
           </div>
         </form>
@@ -1339,18 +1333,13 @@
               <input type="text" id="reg-captcha-input" placeholder="Enter Captcha Code" required autocomplete="off">
             </div>
 
-            <!-- OTP Verification -->
+            <!-- Account confirmation -->
             <div class="otp-verification-box">
               <div class="otp-header">
-                <label for="reg-otp-input">Mobile &amp; Email Verification OTP *</label>
-                <button type="button" class="btn-send-otp" id="send-otp-btn">Send OTP</button>
+                <label>Account Verification</label>
+                <button type="button" class="btn-send-otp" id="send-otp-btn">Prepare Email</button>
               </div>
-              <div class="otp-input-wrap">
-                <input type="text" id="reg-otp-input" placeholder="Enter 6-digit OTP" maxlength="6"
-                  autocomplete="one-time-code">
-              </div>
-              <div class="otp-help-text" id="otp-help-text">Click "Send OTP" to receive verification code on your
-                mobile/email.</div>
+              <div class="otp-help-text" id="otp-help-text">Complete registration to receive a real account-confirmation email.</div>
             </div>
 
             <div class="form-actions space-between">

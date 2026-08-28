@@ -3,30 +3,38 @@
  * Handles Authentication, Strict Registration Validation, Simulated Secure OTP, and Dynamic Notch
  */
 
-import { FICTIONAL_ACCOUNT, getStoredUsers, saveUser } from './supabase.js';
+import { getAuthenticatedUser, registerWithEmail, signInWithEmail, signOutAuthenticatedUser } from './supabase.js';
 import { initBookingEngine, showToast } from './booking.js';
 
 // State
 let loginCaptchaCode = '';
 let regCaptchaCode = '';
-let currentGeneratedOtp = null;
 let currentUser = null;
 
-// Initialize App Core
-function initApp() {
-  // Ensure default fictional account is seeded
-  getStoredUsers();
+// Hackathon-only judge path. This is deliberately separate from Supabase Auth,
+// which remains the path for real traveller accounts.
+const JUDGE_DEMO_ACCOUNT = {
+  username: 'judge',
+  email: 'abc@gmail.com',
+  password: 'secret123',
+  firstName: 'Judge',
+  lastName: 'Demo',
+  mobile: '9000000000',
+  preferredLanguage: 'English',
+  isJudgeDemo: true
+};
 
-  // Restore existing session if any
-  const savedSession = localStorage.getItem('irctc_active_session');
-  if (savedSession) {
+// Initialize App Core
+async function initApp() {
+  // Restore the authenticated Supabase session, which is shared securely across browsers.
+  currentUser = await getAuthenticatedUser();
+  if (!currentUser) {
     try {
-      currentUser = JSON.parse(savedSession);
-      updateNotchAuthState();
-    } catch (e) {
-      console.error(e);
-    }
+      const judgeSession = JSON.parse(localStorage.getItem('irctc_judge_session') || 'null');
+      if (judgeSession?.isJudgeDemo) currentUser = judgeSession;
+    } catch { /* Ignore malformed local demo session data. */ }
   }
+  if (currentUser) updateNotchAuthState();
 
   // Bind Events
   initModalEvents();
@@ -227,11 +235,19 @@ function hideAlert() {
    ========================================================================== */
 function initLoginForm() {
   const form = document.getElementById('login-form');
-  form?.addEventListener('submit', (e) => {
+  const startJudgeSession = () => {
+    currentUser = JUDGE_DEMO_ACCOUNT;
+    localStorage.setItem('irctc_judge_session', JSON.stringify(currentUser));
+    localStorage.setItem('irctc_active_session', JSON.stringify(currentUser));
+    showToast('Judge access enabled.');
+    closeModal();
+    updateNotchAuthState();
+  };
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert();
 
-    const username = document.getElementById('login-username').value.trim();
+    const email = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
     const captcha = document.getElementById('login-captcha-input').value.trim();
 
@@ -242,20 +258,21 @@ function initLoginForm() {
       return;
     }
 
-    // Verify against stored users
-    const users = getStoredUsers();
-    const matched = users.find(u => 
-      u.username.toLowerCase() === username.toLowerCase() && u.password === password
-    );
-
-    if (!matched) {
-      showAlert('Invalid User ID or Password.');
-      refreshLoginCaptcha();
+    if (email.toLowerCase() === JUDGE_DEMO_ACCOUNT.email && password === JUDGE_DEMO_ACCOUNT.password) {
+      startJudgeSession();
       return;
+    } else {
+      try {
+        await signInWithEmail(email, password);
+        currentUser = await getAuthenticatedUser();
+      } catch (error) {
+        showAlert(error.message || 'Invalid email address or password.');
+        refreshLoginCaptcha();
+        return;
+      }
     }
 
     // Login successful
-    currentUser = matched;
     localStorage.setItem('irctc_active_session', JSON.stringify(currentUser));
     showAlert(`Welcome back, ${currentUser.firstName || currentUser.username}!`, 'success');
     showToast(`Logged in as ${currentUser.username}`);
@@ -305,11 +322,6 @@ function validateStep(stepNumber) {
 
     if (!username || username.length < 3) {
       showAlert('User ID is required (minimum 3 characters).');
-      return false;
-    }
-    const users = getStoredUsers();
-    if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-      showAlert('This User ID is already registered. Please choose another.');
       return false;
     }
     if (!isStrongPassword(pass)) {
@@ -448,7 +460,7 @@ function initRegisterForm() {
     });
   });
 
-  // Send OTP Simulator (Dispatches realistic OTP without displaying code in UI text)
+  // Registration confirmation is delivered by Supabase Auth; no OTP is generated in the browser.
   const sendOtpBtn = document.getElementById('send-otp-btn');
   sendOtpBtn?.addEventListener('click', () => {
     const mobile = document.getElementById('reg-mobile').value.trim();
@@ -460,9 +472,7 @@ function initRegisterForm() {
       return;
     }
 
-    currentGeneratedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Realistic timer & notification
+    // UI cooldown only; the real email is sent when the verified registration is submitted.
     sendOtpBtn.disabled = true;
     let countdown = 30;
     sendOtpBtn.textContent = `Resend (${countdown}s)`;
@@ -478,15 +488,12 @@ function initRegisterForm() {
     }, 1000);
 
     const helpText = document.getElementById('otp-help-text');
-    helpText.innerHTML = `OTP sent to <strong>******${mobile.slice(-4)}</strong> &amp; <strong>${email.split('@')[0].slice(0, 2)}***@${email.split('@')[1]}</strong>`;
-
-    // Realistic toast notification simulating incoming SMS/Email
-    showToast(`📱 SMS received: Your IRCTC Verification OTP is ${currentGeneratedOtp}`);
+    helpText.innerHTML = `A real account-confirmation email will be sent to <strong>${email}</strong> when you complete registration.`;
   });
 
   // Complete Registration Submit
   const regForm = document.getElementById('register-form');
-  regForm?.addEventListener('submit', (e) => {
+  regForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert();
 
@@ -499,16 +506,6 @@ function initRegisterForm() {
     if (captcha.toLowerCase() !== regCaptchaCode.toLowerCase()) {
       showAlert('Invalid Security Captcha code.');
       refreshRegCaptcha();
-      return;
-    }
-
-    const enteredOtp = document.getElementById('reg-otp-input').value.trim();
-    if (!currentGeneratedOtp) {
-      showAlert('Please click "Send OTP" to request your verification code.');
-      return;
-    }
-    if (enteredOtp !== currentGeneratedOtp) {
-      showAlert('Incorrect OTP entered. Please verify the code and try again.');
       return;
     }
 
@@ -536,17 +533,14 @@ function initRegisterForm() {
       }
     };
 
-    saveUser(newUser);
-    currentUser = newUser;
-    localStorage.setItem('irctc_active_session', JSON.stringify(currentUser));
-
-    showAlert('Account created successfully! Logging you in...', 'success');
-    showToast(`Welcome to IRCTC, ${newUser.firstName}!`);
-
-    setTimeout(() => {
-      closeModal();
-      updateNotchAuthState();
-    }, 1200);
+    try {
+      await registerWithEmail(newUser);
+      showAlert('Account created. Check your email and confirm the account before signing in.', 'success');
+      showToast('Confirmation email sent.');
+      window.setTimeout(() => switchTab('login'), 1800);
+    } catch (error) {
+      showAlert(error.message || 'We could not create your account. Please try again.');
+    }
   });
 }
 
@@ -586,9 +580,11 @@ function updateNotchAuthState() {
       }
     });
 
-    document.getElementById('logout-btn')?.addEventListener('click', () => {
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      if (!currentUser?.isJudgeDemo) await signOutAuthenticatedUser();
       currentUser = null;
       localStorage.removeItem('irctc_active_session');
+      localStorage.removeItem('irctc_judge_session');
       window.location.reload();
     });
   } else {

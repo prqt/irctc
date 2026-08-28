@@ -62,7 +62,7 @@ body::before {
   transition: opacity .7s cubic-bezier(.16, 1, .3, 1);
 }
 
-body.home-view::before {
+body.home-view::before, body.pnr-view::before {
   opacity: 1;
 }
 
@@ -208,6 +208,7 @@ body.home-view::before {
   background-color: #e4e4e7;
   transform: translateY(-1px);
 }
+
 
 .user-profile-badge {
   display: flex;
@@ -657,6 +658,10 @@ body.home-view .main-search-card .btn-primary-action:hover {
   background: #fff;
 }
 
+body.pnr-view .main-search-card { background: rgba(4, 7, 12, .76); border-color: rgba(205, 220, 232, .25); box-shadow: 0 20px 42px rgba(0, 0, 0, .5); }
+body.pnr-view .main-search-card .input-block input { background: rgba(9, 15, 24, .9); border-color: #2d4357; }
+body.pnr-view .main-search-card .input-block input:focus { border-color: #84b3cd; background: #0c131d; }
+
 .site-footer {
   display: none;
   width: 100%;
@@ -900,6 +905,13 @@ body.home-view .site-footer {
   gap: 6px;
 }
 
+.btn-primary-action svg, .btn-pnr-submit svg { width: 15px; height: 15px; stroke-width: 2.6; }
+.btn-pnr-submit { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 116px; }
+.button-spinner { width: 16px; height: 16px; border: 2px solid rgba(0, 0, 0, .25); border-top-color: currentColor; border-radius: 50%; animation: button-spin .65s linear infinite; }
+.btn-pnr-submit:disabled { cursor: wait; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@keyframes button-spin { to { transform: rotate(360deg); } }
+
 .btn-primary-action:hover:not(:disabled) {
   background: #e4e4e7;
   transform: translateY(-1px);
@@ -1134,8 +1146,12 @@ body.home-view .site-footer {
 
 .vande-bharat-svg {
   display: block;
+  width: 100%;
+  margin: 0;
   filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.85));
 }
+
+.train-svg-slider.state-mobile-horizontal { opacity: 1; visibility: visible; }
 
 /* 60% Right: Train Selection Pane (Scrolls independently without moving the train SVG) */
 .trains-selection-pane {
@@ -3717,25 +3733,27 @@ body.home-view .site-footer {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 286px;
-    max-height: 286px;
-    margin: 0 auto 18px;
-    border: 1px solid var(--border-subtle);
-    border-radius: 14px;
-    background: #0d131c;
+    height: 190px;
+    max-height: 190px;
+    margin: 0 auto 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     animation: mobile-preview-stage .45s cubic-bezier(.16, 1, .3, 1);
   }
 
   .trains-split-container.state-split .train-pure-viewport {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
+    overflow: visible;
   }
 
   .trains-split-container.state-split .train-svg-slider {
-    width: 300px;
-    flex: 0 0 300px;
-    margin-left: calc(50% - 150px);
+    width: 360px;
+    flex: 0 0 360px;
+    margin-left: calc(50% - 180px);
     transition: transform .75s cubic-bezier(.16, 1, .3, 1), opacity .35s ease;
+    transform-origin: center center;
   }
 
   .trains-selection-pane {

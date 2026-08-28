@@ -9,7 +9,7 @@
  * - Auto-Fill, DELBOT-backed Freehand Tear Verification & Printable Confirmed E-Ticket
  */
 
-import { searchStations, populateStationDatalist } from './stations.js';
+import { INDIAN_STATIONS, searchStations, populateStationDatalist } from './stations.js';
 import { getStoredBookings, saveBooking, findBookingByPnr } from './supabase.js';
 
 // Current Booking Session State (declared at top to eliminate TDZ issues)
@@ -171,8 +171,7 @@ export function initBookingEngine() {
   document.getElementById('btn-copy-pnr')?.addEventListener('click', copyPnr);
   document.getElementById('btn-download-pdf')?.addEventListener('click', () => window.print());
   document.getElementById('btn-book-another')?.addEventListener('click', () => {
-    clearAllForms();
-    switchView('search');
+    window.location.reload();
   });
 }
 
@@ -219,6 +218,7 @@ export function switchView(viewName) {
     if (el) el.style.display = (v === viewName) ? 'block' : 'none';
   });
   document.body.classList.toggle('home-view', viewName === 'search');
+  document.body.classList.toggle('pnr-view', viewName === 'pnr');
 
   const stepper = document.getElementById('booking-stepper');
   if (viewName === 'pnr') {
@@ -275,6 +275,24 @@ function setupStationField(inputId, dropdownId, clearBtnId) {
 
   if (!input || !dropdown) return;
 
+  const applyStation = (stn) => {
+    const fullVal = `${stn.code} - ${stn.name} (${stn.state})`;
+    input.value = fullVal;
+    dropdown.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'block';
+    if (inputId === 'search-from') {
+      bookingState.search.from = fullVal;
+    } else {
+      bookingState.search.to = fullVal;
+    }
+  };
+
+  function resolveExactStation(value) {
+    const clean = value.trim().toLowerCase();
+    if (!clean) return null;
+    return INDIAN_STATIONS.find(stn => stn.code.toLowerCase() === clean || stn.name.toLowerCase() === clean) || null;
+  }
+
   function renderList(query = '') {
     const results = searchStations(query, 16);
     dropdown.innerHTML = '';
@@ -297,17 +315,8 @@ function setupStationField(inputId, dropdownId, clearBtnId) {
       `;
 
       item.addEventListener('click', () => {
-        const fullVal = `${stn.code} - ${stn.name} (${stn.state})`;
-        input.value = fullVal;
-        dropdown.style.display = 'none';
-        if (clearBtn) clearBtn.style.display = 'block';
-
-        if (inputId === 'search-from') {
-          bookingState.search.from = fullVal;
-          document.getElementById('search-to')?.focus();
-        } else {
-          bookingState.search.to = fullVal;
-        }
+        applyStation(stn);
+        if (inputId === 'search-from') document.getElementById('search-to')?.focus();
       });
 
       dropdown.appendChild(item);
@@ -326,6 +335,19 @@ function setupStationField(inputId, dropdownId, clearBtnId) {
   input.addEventListener('input', () => {
     if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
     renderList(input.value);
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    const match = resolveExactStation(input.value);
+    if (!match) {
+      event.preventDefault();
+      showToast('Choose a station from the list, or enter its exact station code or name.');
+      return;
+    }
+    event.preventDefault();
+    applyStation(match);
+    if (inputId === 'search-from') document.getElementById('search-to')?.focus();
   });
 
   clearBtn?.addEventListener('click', (e) => {
@@ -524,6 +546,7 @@ function handleSearchSubmit(e) {
 
   const fromVal = document.getElementById('search-from').value.trim();
   const toVal = document.getElementById('search-to').value.trim();
+  const resolveSubmittedStation = (value) => INDIAN_STATIONS.find(stn => `${stn.code} - ${stn.name} (${stn.state})`.toLowerCase() === value.toLowerCase()) || INDIAN_STATIONS.find(stn => stn.code.toLowerCase() === value.toLowerCase() || stn.name.toLowerCase() === value.toLowerCase());
 
   if (!fromVal) {
     showToast('Please choose a departure station.');
@@ -536,8 +559,21 @@ function handleSearchSubmit(e) {
     return;
   }
 
-  bookingState.search.from = fromVal;
-  bookingState.search.to = toVal;
+  const fromStation = resolveSubmittedStation(fromVal);
+  const toStation = resolveSubmittedStation(toVal);
+  if (!fromStation || !toStation) {
+    showToast('Select valid departure and destination stations from the station list.');
+    (!fromStation ? document.getElementById('search-from') : document.getElementById('search-to')).focus();
+    return;
+  }
+  if (fromStation.code === toStation.code) {
+    showToast('Departure and destination stations must be different.');
+    document.getElementById('search-to').focus();
+    return;
+  }
+
+  bookingState.search.from = `${fromStation.code} - ${fromStation.name} (${fromStation.state})`;
+  bookingState.search.to = `${toStation.code} - ${toStation.name} (${toStation.state})`;
   bookingState.search.date = document.getElementById('search-date').value;
   bookingState.search.class = document.getElementById('search-class').value;
   bookingState.search.quota = document.getElementById('search-quota').value;
@@ -657,19 +693,26 @@ export function updateTrainShowcase(trainNumber, classCode) {
 
     if (slider) {
       const isMobilePreview = window.matchMedia('(max-width: 768px)').matches;
+      if (isMobilePreview) {
+        slider.className = 'train-svg-slider state-mobile-horizontal';
+        // A rotated mobile-only view: EC occupies the first horizontal coach,
+        // while CC slides across to bring the second coach into view.
+        const mobileOffset = classCode === 'CC' ? -230 : 0;
+        slider.style.transform = `translate3d(${mobileOffset + 430}px, 0, 0) rotate(-90deg) scale(.32)`;
+        window.setTimeout(() => { slider.style.transform = `translate3d(${mobileOffset}px, 0, 0) rotate(-90deg) scale(.32)`; }, 30);
+        return seatInfo;
+      }
       if (classCode === 'CC') {
         slider.className = 'train-svg-slider state-cc';
         // If bottom seat row > 6, shift train up slightly to keep seat visible in center
         const offset = seatInfo.row > 6 ? -870 - (seatInfo.row - 6) * 55 : -870;
-        slider.style.transform = isMobilePreview ? `translate3d(380px, ${offset}px, 0)` : `translate3d(0, ${offset}px, 0)`;
-        if (isMobilePreview) window.setTimeout(() => { slider.style.transform = `translate3d(0, ${offset}px, 0)`; }, 30);
+        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
       } else {
         // EC
         slider.className = 'train-svg-slider state-ec';
         // If bottom seat row > 5, shift train up slightly to keep seat visible in center
         const offset = seatInfo.row > 5 ? -(seatInfo.row - 5) * 55 : 0;
-        slider.style.transform = isMobilePreview ? `translate3d(380px, ${offset}px, 0)` : `translate3d(0, ${offset}px, 0)`;
-        if (isMobilePreview) window.setTimeout(() => { slider.style.transform = `translate3d(0, ${offset}px, 0)`; }, 30);
+        slider.style.transform = `translate3d(0, ${offset}px, 0)`;
       }
     }
 
@@ -807,7 +850,7 @@ function renderTrainsList() {
 
           actionBox.innerHTML = `
             <button type="button" class="btn-check-avail" id="btn-avail-${trainNum}">
-              Proceed with ${seatMatchText} &rarr;
+              Proceed with ${seatMatchText} <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
           `;
           actionBox.style.display = 'flex';
@@ -823,6 +866,7 @@ function renderTrainsList() {
 
     container.appendChild(card);
   });
+  window.lucide?.createIcons();
 }
 
 function selectTrainAndClass(trainNumber, classCode) {
@@ -1905,7 +1949,7 @@ function executePnrLookup(pnr) {
 
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'SEARCHING...';
+    btn.innerHTML = '<span class="button-spinner" aria-hidden="true"></span><span class="sr-only">Checking PNR status</span>';
   }
 
   triggerTopProgress(500, async () => {
@@ -1922,7 +1966,8 @@ function executePnrLookup(pnr) {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = 'GET STATUS &rarr;';
+        btn.innerHTML = 'GET STATUS <i data-lucide="arrow-right" aria-hidden="true"></i>';
+        window.lucide?.createIcons();
       }
     }
   });

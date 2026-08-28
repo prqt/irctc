@@ -22,74 +22,56 @@ if (window.supabase) {
 }
 
 /**
- * Default Seeded User Account for Testing & Auth Demo
+ * Supabase Auth is the single source of truth for accounts. Unlike localStorage,
+ * sessions and password verification work across browsers and devices.
  */
-export const FICTIONAL_ACCOUNT = {
-  username: 'pratham',
-  password: 'Password@123',
-  preferredLanguage: 'English',
-  firstName: 'Pratham',
-  middleName: '',
-  lastName: 'User',
-  gender: 'Male',
-  dob: '2000-01-01',
-  occupation: 'Professional',
-  maritalStatus: 'Single',
-  email: 'pratham@irctc.co.in',
-  mobile: '9876543210',
-  address: {
-    door: 'Flat 402',
-    street: 'Railway Colony Road',
-    city: 'New Delhi',
-    state: 'Delhi',
-    pincode: '110001',
-    country: 'India'
-  }
-};
-
-/**
- * Retrieve Stored Users from localStorage
- */
-export function getStoredUsers() {
-  const users = localStorage.getItem('irctc_registered_users');
-  if (!users) {
-    const defaultList = [FICTIONAL_ACCOUNT];
-    localStorage.setItem('irctc_registered_users', JSON.stringify(defaultList));
-    return defaultList;
-  }
-  try {
-    const parsed = JSON.parse(users);
-    if (!Array.isArray(parsed)) {
-      const defaultList = [FICTIONAL_ACCOUNT];
-      localStorage.setItem('irctc_registered_users', JSON.stringify(defaultList));
-      return defaultList;
+export async function registerWithEmail(user) {
+  if (!supabase) throw new Error('Authentication service is unavailable. Please try again later.');
+  const options = {
+    data: {
+      username: user.username,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      mobile: user.mobile,
+      preferred_language: user.preferredLanguage
     }
-    if (!parsed.some(u => u.username && u.username.toLowerCase() === FICTIONAL_ACCOUNT.username.toLowerCase())) {
-      parsed.push(FICTIONAL_ACCOUNT);
-      localStorage.setItem('irctc_registered_users', JSON.stringify(parsed));
-    }
-    return parsed;
-  } catch (e) {
-    console.error('Error parsing stored users:', e);
-    return [FICTIONAL_ACCOUNT];
+  };
+  if (window.location.protocol !== 'file:') {
+    options.emailRedirectTo = window.location.origin + window.location.pathname;
   }
+  const { data, error } = await supabase.auth.signUp({
+    email: user.email,
+    password: user.password,
+    options
+  });
+  if (error) throw error;
+  return data;
 }
 
-/**
- * Save New User to LocalStorage and sync to Cloud
- */
-export async function saveUser(user) {
-  const users = getStoredUsers();
-  users.push(user);
-  localStorage.setItem('irctc_registered_users', JSON.stringify(users));
+export async function signInWithEmail(email, password) {
+  if (!supabase) throw new Error('Authentication service is unavailable. Please try again later.');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.user;
+}
 
-  if (supabase) {
-    try {
-      await supabase.from('users').insert([user]);
-    } catch (e) {
-      console.warn('[Supabase User Sync Notice]', e.message || e);
-    }
-  }
+export async function getAuthenticatedUser() {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return null;
+  const metadata = data.user.user_metadata || {};
+  return {
+    id: data.user.id,
+    username: metadata.username || data.user.email,
+    firstName: metadata.first_name || '',
+    lastName: metadata.last_name || '',
+    email: data.user.email,
+    mobile: metadata.mobile || ''
+  };
+}
+
+export async function signOutAuthenticatedUser() {
+  if (supabase) await supabase.auth.signOut();
 }
 
 /**
