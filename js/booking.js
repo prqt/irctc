@@ -719,8 +719,8 @@ export function updateTrainShowcase(trainNumber, classCode) {
       }
       if (classCode === 'CC') {
         slider.className = 'train-svg-slider state-cc';
-        // CC begins at y=988 in the combined SVG. Centre its allocated row.
-        const seatY = 988 + (seatInfo.row - 1) * 68;
+        // CC begins at y=972 in the combined SVG. Centre its allocated row.
+        const seatY = 972 + (seatInfo.row - 1) * 68;
         const offset = 380 - seatY;
         slider.style.transform = `translate3d(0, ${offset}px, 0)`;
       } else {
