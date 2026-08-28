@@ -1415,6 +1415,9 @@ body.home-view .site-footer {
   justify-content: space-between;
 }
 
+.btn-clear-autofill { border: 1px solid var(--border-medium); border-radius: 999px; padding: 7px 11px; background: transparent; color: var(--text-secondary); font: 800 11px var(--font-sf); cursor: pointer; transition: var(--transition); white-space: nowrap; }
+.btn-clear-autofill:hover { color: var(--text-primary); border-color: var(--text-secondary); background: var(--bg-input); }
+
 .pax-title {
   font-size: 13px;
   font-weight: 900;
@@ -3653,6 +3656,9 @@ body.home-view .site-footer {
     padding: 18px 14px;
     border-radius: 14px;
   }
+
+  #view-passengers .card-head { gap: 10px; align-items: flex-start; }
+  .btn-clear-autofill { padding: 6px 9px; font-size: 10px; }
 
   .card-head.with-tabs {
     align-items: flex-start;

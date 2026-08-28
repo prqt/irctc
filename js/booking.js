@@ -150,6 +150,7 @@ export function initBookingEngine() {
 
   // Passenger Events
   document.getElementById('add-passenger-btn')?.addEventListener('click', () => addPassengerRow());
+  document.getElementById('btn-clear-autofill')?.addEventListener('click', clearAutofilledPassengerDetails);
   document.getElementById('passenger-form')?.addEventListener('submit', handlePassengersSubmit);
 
   // Review & freehand tear human verification
@@ -923,6 +924,18 @@ function selectTrainAndClass(trainNumber, classCode) {
   bookingState.passengers = [defaultPassenger];
   renderPassengerInputs();
   switchView('passengers');
+}
+
+function clearAutofilledPassengerDetails() {
+  bookingState.passengers = [{ name: '', age: '', gender: 'Male', berth: 'No Preference', food: 'Veg', concession: 'None' }];
+  bookingState.contact = { email: '', mobile: '' };
+  const emailEl = document.getElementById('booking-contact-email');
+  const mobileEl = document.getElementById('booking-contact-mobile');
+  if (emailEl) emailEl.value = '';
+  if (mobileEl) mobileEl.value = '';
+  renderPassengerInputs();
+  document.querySelector('.pax-name')?.focus();
+  showToast('Passenger and contact details cleared.');
 }
 
 /* ==========================================================================
