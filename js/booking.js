@@ -350,6 +350,13 @@ function setupStationField(inputId, dropdownId, clearBtnId) {
     if (inputId === 'search-from') document.getElementById('search-to')?.focus();
   });
 
+  // Mobile keyboards may submit/blur without reliably delivering a keydown.
+  // Normalize exact codes and names here too, before form submission runs.
+  input.addEventListener('change', () => {
+    const match = resolveExactStation(input.value);
+    if (match) applyStation(match);
+  });
+
   clearBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     input.value = '';
@@ -647,9 +654,12 @@ export function assignDynamicSeat(trainNumber, classCode) {
   if (classCode === 'EC') {
     const seatInfo = bookingState.sessionData.sessionSeats.EC;
 
-    // Reset all EC seats to standard unhighlighted
+    // The selected allocation is the only green seat across both coaches.
     document.querySelectorAll('#coach-section-ec use[id^="seat-EC-"]').forEach(u => {
       u.setAttribute('href', '#seat-ec');
+    });
+    document.querySelectorAll('#coach-section-cc use[id^="seat-CC-"]').forEach(u => {
+      u.setAttribute('href', '#seat-cc');
     });
 
     // Highlight the session's chosen seat
@@ -662,7 +672,10 @@ export function assignDynamicSeat(trainNumber, classCode) {
   } else {
     const seatInfo = bookingState.sessionData.sessionSeats.CC;
 
-    // Reset all CC seats to standard unhighlighted
+    // The selected allocation is the only green seat across both coaches.
+    document.querySelectorAll('#coach-section-ec use[id^="seat-EC-"]').forEach(u => {
+      u.setAttribute('href', '#seat-ec');
+    });
     document.querySelectorAll('#coach-section-cc use[id^="seat-CC-"]').forEach(u => {
       u.setAttribute('href', '#seat-cc');
     });
@@ -695,23 +708,28 @@ export function updateTrainShowcase(trainNumber, classCode) {
       const isMobilePreview = window.matchMedia('(max-width: 768px)').matches;
       if (isMobilePreview) {
         slider.className = 'train-svg-slider state-mobile-horizontal';
-        // A rotated mobile-only view: EC occupies the first horizontal coach,
-        // while CC slides across to bring the second coach into view.
-        const mobileOffset = classCode === 'CC' ? -230 : 0;
+        // A rotated mobile-only view. Track the allocated row so the selected
+        // seat stays near the center of the horizontal preview.
+        const rowSpacing = classCode === 'CC' ? 26 : 25;
+        const coachOffset = classCode === 'CC' ? -250 : 20;
+        const mobileOffset = coachOffset - (seatInfo.row - 1) * rowSpacing;
         slider.style.transform = `translate3d(${mobileOffset + 430}px, 0, 0) rotate(-90deg) scale(.32)`;
         window.setTimeout(() => { slider.style.transform = `translate3d(${mobileOffset}px, 0, 0) rotate(-90deg) scale(.32)`; }, 30);
         return seatInfo;
       }
       if (classCode === 'CC') {
         slider.className = 'train-svg-slider state-cc';
-        // If bottom seat row > 6, shift train up slightly to keep seat visible in center
-        const offset = seatInfo.row > 6 ? -870 - (seatInfo.row - 6) * 55 : -870;
+        // CC begins at y=988 in the combined SVG. Centre its allocated row.
+        const seatY = 988 + (seatInfo.row - 1) * 68;
+        const offset = 380 - seatY;
         slider.style.transform = `translate3d(0, ${offset}px, 0)`;
       } else {
         // EC
         slider.className = 'train-svg-slider state-ec';
-        // If bottom seat row > 5, shift train up slightly to keep seat visible in center
-        const offset = seatInfo.row > 5 ? -(seatInfo.row - 5) * 55 : 0;
+        // EC begins at y=240. Leave early rows naturally positioned and lift
+        // later rows enough to keep the selected seat in the viewport.
+        const seatY = 240 + (seatInfo.row - 1) * 65;
+        const offset = Math.min(0, 380 - seatY);
         slider.style.transform = `translate3d(0, ${offset}px, 0)`;
       }
     }

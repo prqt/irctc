@@ -3786,12 +3786,19 @@ body.home-view .site-footer {
   }
 
   .train-classes-scroll {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     padding-bottom: 5px;
   }
 
   .class-fare-box {
-    min-width: 132px;
+    min-width: 0;
+    padding: 10px;
   }
+
+  .class-fare-box .class-header { gap: 4px; }
+  .class-fare-box .class-fare { font-size: 11px; }
+  .class-fare-box .btn-book-class { width: 100%; }
 
   .review-layout-grid {
     grid-template-columns: 1fr;
