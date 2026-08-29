@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IRCTC — Next Gen Rail Experience</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>RailDemo — Hackathon Rail Experience</title>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='16' height='13' rx='2'/><path d='M4 11h16'/><path d='M12 3v8'/><path d='M8 19l-2 3'/><path d='M18 22l-2-3'/><path d='M8 16l-2 3'/><path d='M16 16l2 3'/></svg>">
   <link rel="stylesheet" href="css/style.css">
@@ -15,6 +16,8 @@
 </head>
 
 <body class="home-view">
+
+  <div class="demo-notice" role="status">Hackathon prototype — fictional rail service. Do not enter real credentials, identity details, or payment information. No tickets or payments are processed.</div>
 
   <!-- Top Browser-Style Thin Progress Bar (Grey/Charcoal) -->
   <div id="top-progress-bar" class="top-progress-bar">
@@ -41,19 +44,13 @@
   <!-- Top Full-Span Notch Header -->
   <header class="notch-header">
     <div class="notch-bar">
-      <!-- Left: National and IRCTC branding -->
+      <!-- Fictional product branding -->
       <div class="notch-left">
         <a href="#" class="logo-link" id="nav-home-btn">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Emblem_of_India_%28navy_blue%29.svg"
-            alt="Emblem of India" class="india-emblem-logo" />
-          <span class="irctc-logo-disc"><img
-              src="https://1000logos.net/wp-content/uploads/2022/02/IRCTC-logo-1536x864.png" alt="IRCTC"
-              class="irctc-dual-logo"
-              onerror="this.parentElement.parentElement.classList.add('logo-fallback-active')" /></span>
-          <span class="irctc-wordmark"><strong>IRCTC</strong><small>Indian Railway Catering and Tourism
-              Corporation</small></span>
+          <span class="raildemo-logo-disc" aria-hidden="true"><i data-lucide="train-front"></i></span>
+          <span class="raildemo-wordmark"><strong>RailDemo</strong><small>Fictional rail-booking prototype</small></span>
           <div class="logo-fallback">
-            <span class="logo-badge">IRCTC</span>
+            <span class="logo-badge">RD</span>
           </div>
         </a>
       </div>
@@ -95,7 +92,7 @@
       <div class="stepper-line"></div>
       <div class="stepper-step" data-step="payment">
         <span class="step-num">5</span>
-        <span class="step-label">Payment</span>
+        <span class="step-label">Confirm</span>
       </div>
       <div class="stepper-line"></div>
       <div class="stepper-step" data-step="ticket">
@@ -118,7 +115,7 @@
               <i data-lucide="ticket" style="width:15px;height:15px;vertical-align:middle;"></i> PNR Status
             </button>
           </div>
-          <span class="card-tag">CRIS CONNECTED</span>
+          <span class="card-tag">DEMO DATA</span>
         </div>
 
         <form id="train-search-form">
@@ -222,7 +219,7 @@
               <i data-lucide="ticket" style="width:15px;height:15px;vertical-align:middle;"></i> PNR Status
             </button>
           </div>
-          <span class="card-tag">CRIS LIVE PNR</span>
+          <span class="card-tag">DEMO PNR</span>
         </div>
 
         <form id="pnr-search-form" class="pnr-search-form">
@@ -684,7 +681,7 @@
         <div class="card-head">
           <div>
             <h2 class="card-title">Passenger Details</h2>
-            <p class="card-subtitle">Auto-filled from your logged in IRCTC profile</p>
+            <p class="card-subtitle">Auto-filled from your RailDemo profile</p>
           </div>
           <button type="button" class="btn-clear-autofill" id="btn-clear-autofill">Not booking for yourself?</button>
         </div>
@@ -735,8 +732,8 @@
             <div class="bill-perforation top"></div>
 
             <div class="bill-header">
-              <div class="bill-brand">IRCTC RAIL RECEIPT</div>
-              <div class="bill-meta" id="bill-date-time">TAX INVOICE / BOOKING MANIFEST</div>
+              <div class="bill-brand">RAILDEMO TRIP SUMMARY</div>
+              <div class="bill-meta" id="bill-date-time">DEMO TRIP SUMMARY / BOOKING MANIFEST</div>
             </div>
 
             <div class="bill-divider-dashed"></div>
@@ -778,14 +775,14 @@
               <span class="verify-badge">SECURITY CHECK</span>
               <h3 class="verify-title">Tear &amp; Verify</h3>
               <p class="verify-instruction">Press anywhere on the gate pass and tear it with one freehand motion.
-                Your tear trajectory is checked before payment is unlocked.</p>
+                Your tear trajectory is checked before the demo confirmation is unlocked.</p>
             </div>
 
             <!-- The interaction zone includes a small area above the ticket for a natural tear start. -->
             <div class="tear-interaction-zone" id="tear-interaction-zone">
               <div class="tearable-pass-box" id="tearable-pass-box">
                 <div class="pass-main-side">
-                  <div class="pass-tag">IRCTC GATE PASS</div>
+                  <div class="pass-tag">DEMO GATE PASS</div>
                   <div class="pass-code" id="pass-temp-pnr">BOOKING MANIFEST</div>
                   <div class="pass-route" id="pass-route-text">NDLS &rarr; MMCT</div>
 
@@ -800,7 +797,7 @@
                 <!-- Right Tearable Drop Stub -->
                 <div class="pass-stub-side" id="pass-stub-side">
                   <div class="stub-micro-barcodes"></div>
-                  <span class="stub-serial">CRIS-2026</span>
+                  <span class="stub-serial">RD-2026</span>
                 </div>
                 <div class="tear-guide" aria-hidden="true"></div>
               </div>
@@ -839,100 +836,24 @@
       </div>
     </section>
 
-    <!-- ================= VIEW 5: PAYMENT ================= -->
+    <!-- ================= VIEW 5: DEMO CONFIRMATION ================= -->
     <section class="booking-view" id="view-payment" style="display: none;">
       <div class="view-header-bar">
         <button type="button" class="btn-back-link" id="back-to-review">&larr; Back to Review</button>
-        <div class="payment-amount-badge" id="payment-amount-display">Amount to Pay: ₹0</div>
+        <div class="payment-amount-badge" id="payment-amount-display">Demo fare: ₹0</div>
       </div>
 
       <div class="booking-card payment-card">
-        <div class="payment-tabs">
-          <button class="pay-tab active" data-paymethod="upi">UPI / QR</button>
-          <button class="pay-tab" data-paymethod="card">Debit / Credit Card</button>
-          <button class="pay-tab" data-paymethod="netbanking">Net Banking</button>
-          <button class="pay-tab" data-paymethod="wallets">IRCTC iMudra / Wallets</button>
-        </div>
-
         <form id="payment-form">
-          <!-- UPI Method -->
-          <div class="pay-method-panel active" id="panel-upi">
-            <div class="upi-box" id="upi-entry-form">
-              <label for="upi-id-input">Enter Virtual Payment Address (UPI ID) *</label>
-              <div class="upi-input-row">
-                <input type="text" id="upi-id-input" placeholder="e.g. mobile@upi / username@okhdfcbank" required>
-                <button type="button" class="btn-verify-upi" id="btn-verify-upi">Verify</button>
-              </div>
-              <div class="upi-apps-icons">
-                <span class="upi-chip">GPay</span>
-                <span class="upi-chip">PhonePe</span>
-                <span class="upi-chip">Paytm</span>
-                <span class="upi-chip">BHIM</span>
-              </div>
-              <button type="button" class="btn-generate-qr" id="btn-generate-qr">PAY WITH IRCTC QR INSTEAD</button>
-            </div>
-            <div class="upi-qr-payment" id="upi-qr-payment" hidden>
-              <span class="verify-badge">IRCTC QR PAYMENT</span>
-              <h3>Scan with any UPI app</h3>
-              <p>Pay ₹<span id="qr-payment-amount">0.00</span> to IRCTC Bank using your preferred UPI app.</p>
-              <div class="payment-qr-frame" id="payment-qr-code" aria-label="Demo UPI QR code"></div>
-              <span class="qr-waiting-label">Awaiting payment confirmation…</span>
-            </div>
-          </div>
-
-          <!-- Card Method -->
-          <div class="pay-method-panel" id="panel-card" style="display: none;">
-            <div class="form-group">
-              <label for="card-num">Card Number *</label>
-              <input type="text" id="card-num" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="card-exp">Expiry Date (MM/YY) *</label>
-                <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5">
-              </div>
-              <div class="form-group">
-                <label for="card-cvv">CVV / CVC *</label>
-                <input type="password" id="card-cvv" placeholder="3 Digits" maxlength="3">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="card-name">Cardholder Name *</label>
-              <input type="text" id="card-name" placeholder="Name on Card">
-            </div>
-          </div>
-
-          <!-- Net Banking Method -->
-          <div class="pay-method-panel" id="panel-netbanking" style="display: none;">
-            <div class="form-group">
-              <label for="netbanking-bank">Select Bank *</label>
-              <select id="netbanking-bank">
-                <option value="SBI">State Bank of India (SBI)</option>
-                <option value="HDFC">HDFC Bank</option>
-                <option value="ICICI">ICICI Bank</option>
-                <option value="AXIS">Axis Bank</option>
-                <option value="PNB">Punjab National Bank</option>
-                <option value="KOTAK">Kotak Mahindra Bank</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Wallets Method -->
-          <div class="pay-method-panel" id="panel-wallets" style="display: none;">
-            <div class="form-group">
-              <label for="wallet-select">Select Wallet *</label>
-              <select id="wallet-select">
-                <option value="IMUDRA">IRCTC iMudra Wallet</option>
-                <option value="PAYTM">Paytm Wallet</option>
-                <option value="MOBIKWIK">MobiKwik</option>
-                <option value="AMAZON">Amazon Pay</option>
-              </select>
-            </div>
-          </div>
+          <section class="pay-method-panel active" aria-label="Demo confirmation">
+            <span class="verify-badge">DEMO ONLY</span>
+            <h3>Generate a fictional trip summary</h3>
+            <p>This hackathon flow does not collect payment data or initiate a transaction.</p>
+          </section>
 
           <div class="payment-action-block">
             <button type="submit" class="btn-primary-action" id="pay-submit-btn">
-              PAY &amp; CONFIRM BOOKING <i data-lucide="arrow-right" aria-hidden="true"></i>
+              CONFIRM DEMO BOOKING <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
           </div>
         </form>
@@ -946,7 +867,7 @@
         <!-- Ticket Success Ribbon -->
         <div class="ticket-status-badge">
           <span class="status-icon">&#x2713;</span>
-          <span class="status-title">BOOKING CONFIRMED &amp; TICKET ISSUED</span>
+          <span class="status-title">DEMO BOOKING CONFIRMED</span>
         </div>
 
         <!-- The Final Confirmed Ticket Container -->
@@ -956,8 +877,8 @@
             <!-- Ticket Top Header -->
             <div class="ticket-head">
               <div class="ticket-rail-brand">
-                <div class="irctc-logo-micro">IRCTC</div>
-                <div class="rail-brand-sub">INDIAN RAILWAYS E-TICKETING</div>
+                <div class="raildemo-logo-micro">RAILDEMO</div>
+                <div class="rail-brand-sub">FICTIONAL RAIL HACKATHON PROTOTYPE</div>
               </div>
               <div class="pnr-badge-box">
                 <span class="pnr-title">PNR NUMBER</span>
@@ -1000,10 +921,10 @@
                 <div class="qr-label">DIGITAL VERIFICATION QR</div>
               </div>
               <div class="ticket-audit-meta">
-                <div><strong>Transaction ID:</strong> <span id="ticket-txn-id">IRCTC98172401</span></div>
+                <div><strong>Demo reference:</strong> <span id="ticket-txn-id">RD98172401</span></div>
                 <div><strong>Quota:</strong> <span id="ticket-quota-display">GENERAL</span></div>
                 <div><strong>Class:</strong> <span id="ticket-class-display">3A (AC 3 TIER)</span></div>
-                <div><strong>Total Fare Paid:</strong> <span id="ticket-fare-display">₹1,850.00</span></div>
+                <div><strong>Simulated fare:</strong> <span id="ticket-fare-display">₹1,850.00</span></div>
               </div>
             </div>
 
@@ -1034,15 +955,15 @@
 
   </main>
 
-  <footer class="site-footer" aria-label="IRCTC information and links">
+  <footer class="site-footer" aria-label="RailDemo information">
     <div class="footer-inner">
       <section class="footer-intro">
-        <span class="footer-kicker">Indian Railway Catering and Tourism Corporation</span>
-        <h2>Travel with confidence.</h2>
-        <p>Book rail journeys, manage tickets, and get assistance when you need it.</p>
-        <div class="footer-socials" aria-label="IRCTC social media">
+        <span class="footer-kicker">Independent hackathon project</span>
+        <h2>Explore the prototype.</h2>
+        <p>RailDemo is a fictional rail-booking experience built for demonstration only.</p>
+        <div class="footer-socials" aria-label="Project links">
           <!-- Facebook -->
-          <a href="https://m.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on Facebook">
+          <a href="https://m.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Project on Facebook">
             <svg class="nc-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
@@ -1050,7 +971,7 @@
           </a>
 
           <!-- LinkedIn -->
-          <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on LinkedIn">
+          <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="Project on LinkedIn">
             <svg class="nc-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
@@ -1059,7 +980,7 @@
 
           <!-- Instagram -->
           <a href="https://www.instagram.com/prat_xd" target="_blank" rel="noopener noreferrer"
-            aria-label="IRCTC on Instagram">
+            aria-label="Project on Instagram">
             <svg class="nc-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
@@ -1069,7 +990,7 @@
           </a>
 
           <!-- X (Twitter) -->
-          <a href="https://x.com/iiPrqt" target="_blank" rel="noopener noreferrer" aria-label="IRCTC on X">
+          <a href="https://x.com/iiPrqt" target="_blank" rel="noopener noreferrer" aria-label="Project on X">
             <svg class="nc-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -1078,7 +999,7 @@
 
           <!-- YouTube -->
           <a href="https://www.youtube.com/@iiPrqt" target="_blank" rel="noopener noreferrer"
-            aria-label="IRCTC on YouTube">
+            aria-label="Project on YouTube">
             <svg class="nc-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
                 d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
@@ -1087,27 +1008,16 @@
         </div>
       </section>
       <section class="footer-links">
-        <h3>Important links</h3><a href="https://contents.irctc.co.in/en/ContactUsEn.html" target="_blank"
-          rel="noopener noreferrer">Contact Us</a><a href="https://equery.irctc.co.in/" target="_blank"
-          rel="noopener noreferrer">eQuery / Support</a><a href="https://contents.irctc.co.in/en/privacypolicy.html"
-          target="_blank" rel="noopener noreferrer">Privacy Policy</a><a
-          href="https://contents.irctc.co.in/en/Terms%20and%20conditions.pdf" target="_blank"
-          rel="noopener noreferrer">Terms &amp; Conditions</a>
+        <h3>Prototype information</h3><span>Fictional data only</span><span>No payments are accepted</span><span>Not affiliated with rail operators</span>
       </section>
       <section class="footer-links">
-        <h3>IRCTC services</h3><a href="https://www.ecatering.irctc.co.in/" target="_blank"
-          rel="noopener noreferrer">eCatering</a><a href="https://www.tourism.irctc.co.in/" target="_blank"
-          rel="noopener noreferrer">IRCTC Tourism</a><a href="https://www.air.irctc.co.in/" target="_blank"
-          rel="noopener noreferrer">IRCTC Air</a><a href="https://www.bus.irctc.co.in/" target="_blank"
-          rel="noopener noreferrer">IRCTC Bus</a>
+        <h3>Hackathon features</h3><span>Demo authentication</span><span>Mock train search</span><span>Sample ticket generation</span>
       </section>
       <section class="footer-contact">
-        <h3>Need help?</h3><a href="tel:14646">Rail ticket support: 14646</a><a
-          href="mailto:etickets@irctc.co.in">etickets@irctc.co.in</a>
-        <p>Outside India<br><strong>+91 8044647999</strong></p>
+        <h3>Important</h3><p>Do not use real personal or financial information in this prototype.</p>
       </section>
     </div>
-    <div class="footer-bottom">© 2026 IRCTC. A Government of India enterprise.</div>
+    <div class="footer-bottom">© 2026 RailDemo. Independent hackathon prototype; not affiliated with any rail operator or government entity.</div>
   </footer>
 
   <!-- ================= AUTH MODAL ================= -->
@@ -1154,7 +1064,7 @@
           <button type="submit" class="btn-submit" id="login-submit-btn">SIGN IN</button>
 
           <div class="form-footer">
-            <p>New to IRCTC? <a href="#" id="switch-to-register">Register an account</a></p>
+            <p>New to RailDemo? <a href="#" id="switch-to-register">Create a demo account</a></p>
           </div>
         </form>
 
@@ -1363,7 +1273,6 @@
   <!-- DELBOT dependencies must load before the booking module uses the pre-trained rnn1 model. -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@chrisgdt/delbot-mouse@1.3.3/dist/delbot.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script type="module" src="js/supabase.js"></script>
   <script type="module" src="js/stations.js"></script>
   <script type="module" src="js/booking.js"></script>

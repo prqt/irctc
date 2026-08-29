@@ -1,5 +1,5 @@
 /* 
-  IRCTC Dark Aesthetic — Clean, Minimalistic, High-Density Pro Booking
+  RailDemo Dark Aesthetic — Clean, Minimalistic, High-Density Pro Booking
   Palette: Pure Black (#000000), Surface Grays, Crisp White & Green Accents
   Font: Apple San Francisco (-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif)
 */
@@ -37,6 +37,16 @@
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.demo-notice {
+  padding: 9px 18px;
+  color: #111827;
+  background: #fbbf24;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
 }
 
 body {
@@ -109,7 +119,7 @@ body.home-view::before, body.pnr-view::before {
   text-decoration: none;
 }
 
-.irctc-dual-logo {
+.raildemo-dual-logo {
   height: 43px;
   width: 43px;
   max-width: 43px;
@@ -119,7 +129,7 @@ body.home-view::before, body.pnr-view::before {
   transform: scale(1.6);
 }
 
-.irctc-logo-disc {
+.raildemo-logo-disc {
   display: grid;
   place-items: center;
   width: 56px;
@@ -138,7 +148,7 @@ body.home-view::before, body.pnr-view::before {
   filter: brightness(0) invert(1) opacity(.92);
 }
 
-.irctc-wordmark {
+.raildemo-wordmark {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -147,12 +157,12 @@ body.home-view::before, body.pnr-view::before {
   line-height: 1.08;
 }
 
-.irctc-wordmark strong {
+.raildemo-wordmark strong {
   font-size: 17px;
   letter-spacing: 1.2px;
 }
 
-.irctc-wordmark small {
+.raildemo-wordmark small {
   max-width: 220px;
   margin-top: 3px;
   color: var(--text-secondary);
@@ -170,11 +180,11 @@ body.home-view::before, body.pnr-view::before {
   letter-spacing: 0.5px;
 }
 
-.logo-fallback-active .irctc-dual-logo {
+.logo-fallback-active .raildemo-dual-logo {
   display: none;
 }
 
-.logo-fallback-active .irctc-wordmark {
+.logo-fallback-active .raildemo-wordmark {
   display: none;
 }
 
@@ -2247,7 +2257,7 @@ body.home-view .site-footer {
   padding-bottom: 14px;
 }
 
-.ticket-rail-brand .irctc-logo-micro {
+.ticket-rail-brand .raildemo-logo-micro {
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -3656,23 +3666,23 @@ body.home-view .site-footer {
     width: 30px;
   }
 
-  .irctc-logo-disc {
+  .raildemo-logo-disc {
     width: 45px;
     height: 45px;
     margin-right: 4px;
   }
 
-  .irctc-dual-logo {
+  .raildemo-dual-logo {
     height: 36px;
     width: 36px;
     max-width: 36px;
   }
 
-  .irctc-wordmark strong {
+  .raildemo-wordmark strong {
     font-size: 14px;
   }
 
-  .irctc-wordmark small {
+  .raildemo-wordmark small {
     max-width: 150px;
     font-size: 6.5px;
   }

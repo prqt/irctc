@@ -1,5 +1,5 @@
 /**
- * IRCTC Application Core Logic
+ * RailDemo Application Core Logic
  * Handles Authentication, Strict Registration Validation, Simulated Secure OTP, and Dynamic Notch
  */
 
@@ -30,7 +30,7 @@ async function initApp() {
   currentUser = await getAuthenticatedUser();
   if (!currentUser) {
     try {
-      const judgeSession = JSON.parse(localStorage.getItem('irctc_judge_session') || 'null');
+      const judgeSession = JSON.parse(localStorage.getItem('raildemo_judge_session') || 'null');
       if (judgeSession?.isJudgeDemo) currentUser = judgeSession;
     } catch { /* Ignore malformed local demo session data. */ }
   }
@@ -65,11 +65,11 @@ function initUtilityBar() {
   window.setInterval(renderTime, 1000);
 
   const scales = { small: '0.92', default: '1', large: '1.08' };
-  const savedScale = localStorage.getItem('irctc_font_scale') || 'default';
+  const savedScale = localStorage.getItem('raildemo_font_scale') || 'default';
   const applyScale = (scale) => {
     document.body.style.zoom = scales[scale];
     document.querySelectorAll('.font-size-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.fontScale === scale));
-    localStorage.setItem('irctc_font_scale', scale);
+    localStorage.setItem('raildemo_font_scale', scale);
   };
   applyScale(savedScale);
   document.querySelectorAll('.font-size-btn').forEach(btn => btn.addEventListener('click', () => applyScale(btn.dataset.fontScale)));
@@ -240,8 +240,8 @@ function initLoginForm() {
   const form = document.getElementById('login-form');
   const startJudgeSession = () => {
     currentUser = JUDGE_DEMO_ACCOUNT;
-    localStorage.setItem('irctc_judge_session', JSON.stringify(currentUser));
-    localStorage.setItem('irctc_active_session', JSON.stringify(currentUser));
+    localStorage.setItem('raildemo_judge_session', JSON.stringify(currentUser));
+    localStorage.setItem('raildemo_active_session', JSON.stringify(currentUser));
     showToast('Judge access enabled.');
     closeModal();
     updateNotchAuthState();
@@ -307,7 +307,7 @@ function initLoginForm() {
     }
 
     // Login successful
-    localStorage.setItem('irctc_active_session', JSON.stringify(currentUser));
+    localStorage.setItem('raildemo_active_session', JSON.stringify(currentUser));
     showAlert(`Welcome back, ${currentUser.firstName || currentUser.username}!`, 'success');
     showToast(`Logged in as ${currentUser.username}`);
     
@@ -617,8 +617,8 @@ function updateNotchAuthState() {
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       if (!currentUser?.isJudgeDemo) await signOutAuthenticatedUser();
       currentUser = null;
-      localStorage.removeItem('irctc_active_session');
-      localStorage.removeItem('irctc_judge_session');
+      localStorage.removeItem('raildemo_active_session');
+      localStorage.removeItem('raildemo_judge_session');
       window.location.reload();
     });
   } else {

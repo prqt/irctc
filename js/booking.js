@@ -1,5 +1,5 @@
 /**
- * IRCTC Ticket Booking Engine & PNR Enquiry System
+ * RailDemo Ticket Booking Engine & Demo Reference Enquiry
  * Features:
  * - 250+ Station Custom Dropdown Chooser
  * - Custom Calendar Date Picker
@@ -30,7 +30,7 @@ export const bookingState = {
   },
   pricing: {
     baseFare: 0,
-    irctcFee: 17.70,
+    demoServiceFee: 17.70,
     gst: 0,
     total: 0
   },
@@ -545,9 +545,9 @@ function renderCalendar() {
 function handleSearchSubmit(e) {
   e.preventDefault();
 
-  const activeSession = localStorage.getItem('irctc_active_session');
+  const activeSession = localStorage.getItem('raildemo_active_session');
   if (!activeSession) {
-    showToast('IRCTC Login Required to search and reserve train tickets.');
+    showToast('RailDemo sign-in is required to explore the booking prototype.');
     document.getElementById('open-auth-btn')?.click();
     return;
   }
@@ -1010,7 +1010,7 @@ function selectTrainAndClass(trainNumber, classCode) {
   bookingState.selectedTrain = train;
   bookingState.selectedClass = cls;
 
-  const activeSession = localStorage.getItem('irctc_active_session');
+  const activeSession = localStorage.getItem('raildemo_active_session');
   let defaultPassenger = { name: '', age: 26, gender: 'Male', berth: 'No Preference', food: 'Veg', concession: 'None' };
 
   if (activeSession) {
@@ -1230,13 +1230,13 @@ function calculateBill() {
     totalBase += fare;
   });
 
-  const irctcFee = 17.70;
+  const demoServiceFee = 17.70;
   const gst = Math.round(totalBase * 0.05 * 100) / 100;
-  const grandTotal = totalBase + irctcFee + gst;
+  const grandTotal = totalBase + demoServiceFee + gst;
 
   bookingState.pricing = {
     baseFare: totalBase,
-    irctcFee: irctcFee,
+    demoServiceFee: demoServiceFee,
     gst: gst,
     total: grandTotal
   };
@@ -1245,7 +1245,7 @@ function calculateBill() {
 function renderPaperBill() {
   const dateStr = formatDate(bookingState.search.date);
   const billDateTime = document.getElementById('bill-date-time');
-  if (billDateTime) billDateTime.textContent = `INVOICE DATE: ${new Date().toLocaleDateString('en-GB')} | IRCTC ONLINE`;
+  if (billDateTime) billDateTime.textContent = `DEMO SUMMARY: ${new Date().toLocaleDateString('en-GB')} | RAILDEMO`;
 
   const trainNum = bookingState.selectedTrain ? bookingState.selectedTrain.number : '12952';
   const trainName = bookingState.selectedTrain ? bookingState.selectedTrain.name : 'MUMBAI RAJDHANI EXP';
@@ -1305,8 +1305,8 @@ function renderPaperBill() {
         <span class="bill-val">₹${bookingState.pricing.baseFare.toFixed(2)}</span>
       </div>
       <div class="bill-row">
-        <span class="bill-label">IRCTC Convenience Fee (Incl. GST):</span>
-        <span class="bill-val">₹${bookingState.pricing.irctcFee.toFixed(2)}</span>
+        <span class="bill-label">Demo service fee (simulated):</span>
+        <span class="bill-val">₹${bookingState.pricing.demoServiceFee.toFixed(2)}</span>
       </div>
       <div class="bill-row">
         <span class="bill-label">Travel Insurance &amp; GST (5%):</span>
@@ -1764,7 +1764,7 @@ function initFreehandTear() {
       if (payBtn) {
         payBtn.disabled = false;
         payBtn.classList.remove('disabled');
-        payBtn.textContent = `PROCEED TO PAYMENT (₹${bookingState.pricing.total.toFixed(2)}) →`;
+        payBtn.textContent = 'CONTINUE TO DEMO CONFIRMATION →';
       }
       showToast('Tear accepted. Human verification complete.');
     }, 250);
@@ -1824,81 +1824,15 @@ function resetFreehandTear() {
   if (payBtn) {
     payBtn.disabled = true;
     payBtn.classList.add('disabled');
-    payBtn.textContent = 'TEAR TO UNLOCK PAYMENT';
+    payBtn.textContent = 'TEAR TO UNLOCK DEMO CONFIRMATION';
   }
 }
 
 /* ==========================================================================
-   STEP 5: PAYMENT ENGINE & FINAL CONFIRMATION
+   STEP 5: DEMO CONFIRMATION & FINAL TICKET
    ========================================================================== */
 function initPaymentTabs() {
-  const tabs = document.querySelectorAll('.pay-tab');
-  const panels = document.querySelectorAll('.pay-method-panel');
-
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      panels.forEach(p => p.style.display = 'none');
-
-      tab.classList.add('active');
-      const method = tab.getAttribute('data-paymethod');
-      const panel = document.getElementById(`panel-${method}`);
-      if (panel) panel.style.display = 'block';
-      const upiInput = document.getElementById('upi-id-input');
-      if (method !== 'upi') {
-        resetUpiQrPayment();
-        if (upiInput) upiInput.required = false;
-      } else if (upiInput) {
-        upiInput.required = Boolean(document.getElementById('upi-qr-payment')?.hidden);
-      }
-    });
-  });
-
-  document.getElementById('btn-verify-upi')?.addEventListener('click', () => {
-    const upiInput = document.getElementById('upi-id-input');
-    const val = upiInput.value.trim();
-    if (val.includes('@')) {
-      upiInput.classList.add('is-verified');
-      showToast(`UPI ID ${val} verified!`);
-    } else {
-      upiInput.classList.remove('is-verified');
-      showToast('Please enter a valid UPI ID (e.g. name@bank)');
-    }
-  });
-
-  document.getElementById('btn-generate-qr')?.addEventListener('click', generateDemoQrPayment);
-}
-
-function resetUpiQrPayment() {
-  const entry = document.getElementById('upi-entry-form');
-  const qrPayment = document.getElementById('upi-qr-payment');
-  const upiInput = document.getElementById('upi-id-input');
-  if (entry) entry.hidden = false;
-  if (qrPayment) qrPayment.hidden = true;
-  if (upiInput) upiInput.required = true;
-}
-
-function generateDemoQrPayment() {
-  const upiInput = document.getElementById('upi-id-input');
-  if (!window.QRCode) {
-    showToast('QR generator is still loading. Please try again.');
-    return;
-  }
-
-  const amount = bookingState.pricing.total.toFixed(2);
-  // QR mode uses IRCTC's receiving address; no customer UPI ID is needed.
-  const payload = `upi://pay?pa=irctc.bank@upi&pn=IRCTC%20Bank&am=${amount}&cu=INR&tn=IRCTC%20booking%20payment`;
-  const qrTarget = document.getElementById('payment-qr-code');
-  const entry = document.getElementById('upi-entry-form');
-  const qrPayment = document.getElementById('upi-qr-payment');
-  if (!qrTarget || !entry || !qrPayment) return;
-
-  qrTarget.innerHTML = '';
-  new window.QRCode(qrTarget, { text: payload, width: 184, height: 184, colorDark: '#111827', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.H });
-  document.getElementById('qr-payment-amount').textContent = amount;
-  entry.hidden = true;
-  qrPayment.hidden = false;
-  if (upiInput) upiInput.required = false;
+  // Intentionally empty: this screen no longer offers any payment method.
 }
 
 function handlePaymentSubmit(e) {
@@ -1907,18 +1841,17 @@ function handlePaymentSubmit(e) {
   const submitButton = document.getElementById('pay-submit-btn');
   if (submitButton) {
     submitButton.disabled = true;
-    submitButton.textContent = 'PROCESSING PAYMENT…';
+    submitButton.textContent = 'GENERATING DEMO TICKET…';
   }
 
   triggerTopProgress(800, async () => {
     await generateConfirmedTicket();
-    clearPaymentForms();
     switchView('ticket');
     if (submitButton) {
       submitButton.disabled = false;
-      submitButton.textContent = 'PAY & CONFIRM BOOKING →';
+      submitButton.textContent = 'CONFIRM DEMO BOOKING →';
     }
-    showToast('Payment successful! Your confirmed e-ticket has been issued.');
+    showToast('Demo booking confirmed. Your fictional e-ticket has been issued.');
   });
 }
 
@@ -1927,7 +1860,7 @@ function handlePaymentSubmit(e) {
    ========================================================================== */
 async function generateConfirmedTicket() {
   const pnr = generatePnr();
-  const txnId = `IRCTC${Math.floor(10000000 + Math.random() * 90000000)}`;
+  const txnId = `RD${Math.floor(10000000 + Math.random() * 90000000)}`;
   const classCode = bookingState.selectedClass ? bookingState.selectedClass.code : '3A';
   const coachPrefix = classCode === '1A' ? 'H1' : (classCode === '2A' ? 'A1' : (classCode === 'EC' ? 'E1' : 'B3'));
 
@@ -2135,7 +2068,7 @@ function renderPnrNotFound(pnr) {
       <div class="pnr-not-found-icon"><i data-lucide="alert-triangle" style="width:32px;height:32px;"></i></div>
       <div class="pnr-not-found-title">PNR Record Not Found</div>
       <div class="pnr-not-found-desc">
-        No railway reservation found for PNR <strong>${pnr}</strong> in the CRIS database. 
+        No demo reservation found for reference <strong>${pnr}</strong> in the RailDemo dataset.
         Please verify the 10-digit number printed on your ticket or SMS.
       </div>
     </div>
@@ -2243,18 +2176,7 @@ function renderPnrResult(booking) {
    FORM CLEARING UTILITIES
    ========================================================================== */
 function clearPaymentForms() {
-  const cardNum = document.getElementById('card-num');
-  const cardExp = document.getElementById('card-exp');
-  const cardCvv = document.getElementById('card-cvv');
-  const cardName = document.getElementById('card-name');
-  const upiInput = document.getElementById('upi-id-input');
-
-  if (cardNum) cardNum.value = '';
-  if (cardExp) cardExp.value = '';
-  if (cardCvv) cardCvv.value = '';
-  if (cardName) cardName.value = '';
-  if (upiInput) upiInput.value = '';
-  resetUpiQrPayment();
+  // Kept as a no-op so the existing booking reset flow remains compatible.
 }
 
 function clearAllForms() {

@@ -78,7 +78,7 @@ export async function signOutAuthenticatedUser() {
  * Retrieve Locally Cached PNR Bookings
  */
 export function getStoredBookings() {
-  const data = localStorage.getItem('irctc_all_bookings');
+  const data = localStorage.getItem('raildemo_all_bookings');
   if (!data) {
     return [];
   }
@@ -103,7 +103,7 @@ export function cacheBookingLocally(booking) {
   } else {
     list.unshift(booking);
   }
-  localStorage.setItem('irctc_all_bookings', JSON.stringify(list));
+  localStorage.setItem('raildemo_all_bookings', JSON.stringify(list));
 }
 
 /**
